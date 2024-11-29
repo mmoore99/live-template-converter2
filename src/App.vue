@@ -1,41 +1,82 @@
 <template>
   <div class="min-h-screen p-4 bg-gray-100">
     <div class="container mx-auto">
-      <h1 class="mb-8 text-3xl font-bold text-center">Live Template Converter</h1>
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+          <button
+            @click="switchMode"
+            class="px-3.5 py-1.5 text-sm text-white rounded"
+            :class="isCreationMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'"
+          >
+            {{ isCreationMode ? 'Switch to Convert' : 'Switch to Create' }}
+          </button>
+        </div>
+        <h1 class="text-3xl font-bold">
+          {{ isCreationMode ? 'Snippet Template Creator' : 'Snippet Template Converter' }}
+        </h1>
+        <div class="w-[120px]"></div>
+      </div>
       
       <div class="grid grid-cols-2 gap-4">
-        <div class="col-span-1">
-          <div class="flex items-center p-4 mb-4 bg-white rounded-lg shadow">
-            
-            <FilenameInput v-model="filename" />
+        <div class="flex flex-col">
+          <div v-if="!isCreationMode" class="flex items-center p-4 mb-4 bg-white rounded-lg shadow">
+            <InputFilenameField 
+              v-model="inputFilename"
+              @file-selected="handleFileSelected"
+            />
           </div>
+          
+          <SourcePanel
+            v-model="sourceContent"
+            :template-count="templateCount"
+            :is-creation-mode="isCreationMode"
+            @update:is-creation-mode="isCreationMode = $event"
+            @snippet-generated="handleSnippetGenerated"
+            @update:input-filename="inputFilename = $event"
+            @clear="clearSource"
+          />
         </div>
-        <div class="col-span-1"></div>
 
-        <SourcePanel
-          v-model="sourceContent"
-          :template-count="templateCount"
-          @clear="clearSource"
-        />
-
-        <OutputPanel
-          :content="formattedOutput"
-          :language="'vscode-snippet'"
-          :include-brackets="includeBrackets"
-          @copy="copyToClipboard"
-          @download="downloadJson"
-          @update:include-brackets="includeBrackets = $event"
-        />
+        <div class="flex flex-col">
+          <div v-if="!isCreationMode" class="flex items-center p-4 mb-4 bg-white rounded-lg shadow">
+            <FilenameInput 
+              v-model="filename"
+              :content="formattedOutput"
+              :language="outputFormat === 'json' ? 'vscode-snippet' : 'xml'"
+            />
+          </div>
+          
+          <OutputPanel
+            :content="formattedOutput"
+            :filename="filename"
+            :language="isCreationMode ? (outputType === 'snippet' ? 'vscode-snippet' : 'xml') : (outputFormat === 'json' ? 'vscode-snippet' : 'xml')"
+            :include-template-set="includeTemplateSet"
+            :template-set-group="templateSetGroup"
+            :template-count="templateCount"
+            :include-brackets="includeBrackets"
+            :is-creation-mode="isCreationMode"
+            @copy="copyToClipboard"
+            @download="downloadJson"
+            @update:output-type="outputType = $event"
+            @update:include-brackets="includeBrackets = $event"
+            @update:include-template-set="includeTemplateSet = $event"
+            @update:template-set-group="templateSetGroup = $event"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
+import { useRoute } from './composables/route'
 import { parseWebStormTemplate, convertToSnippets } from './utils/converter'
+import { convertToWebStormTemplate } from './utils/vscodeToWebstorm'
+import { detectInputFormat } from './utils/detector'
 import { formatSnippetOutput, getFormattedContent, type SnippetOutput } from './utils/formatter'
+import InputFilenameField from './components/InputFilenameField.vue'
 import FilenameInput from './components/FilenameInput.vue'
 import SourcePanel from './components/SourcePanel.vue'
 import OutputPanel from './components/OutputPanel.vue'
@@ -43,11 +84,58 @@ import OutputPanel from './components/OutputPanel.vue'
 const toast = useToast()
 const sourceContent = ref('')
 const snippets = ref<SnippetOutput>({})
-const filename = ref('snippets')
+const filename = ref('')
+const inputFilename = ref('')
 const includeBrackets = ref(false)
+const includeTemplateSet = ref(true)
+const templateSetGroup = ref('')
+const outputFormat = ref<'xml' | 'json'>('json')
+const isCreationMode = ref(false)
+const outputType = ref('snippet')
+
+const route = useRoute()
+
+function switchMode() {
+  isCreationMode.value = !isCreationMode.value
+  sourceContent.value = ''
+  snippets.value = {}
+}
+
+// Initialize mode based on URL path
+onMounted(() => {
+  isCreationMode.value = route.getPath().includes('/create')
+  route.onChange((path) => {
+    isCreationMode.value = path.includes('/create')
+    sourceContent.value = ''
+    snippets.value = {}
+  })
+})
+
+// Update URL when mode changes
+watch(isCreationMode, (newValue) => {
+  const newPath = newValue ? '/create' : '/'
+  if (route.getPath() !== newPath) {
+    route.setPath(newPath)
+  }
+})
 
 const formattedOutput = computed(() => {
-  return formatSnippetOutput(snippets, includeBrackets.value)
+  if (isCreationMode.value) {
+    if (outputType.value === 'snippet') {
+      return formatSnippetOutput(snippets, includeBrackets.value)
+    } else {
+      return convertToWebStormTemplate(snippets.value, {
+        includeTemplateSet: false,
+        group: 'Custom'
+      })
+    }
+  } else if (outputFormat.value === 'json') {
+    return formatSnippetOutput(snippets, includeBrackets.value)
+  }
+  return convertToWebStormTemplate(snippets.value, {
+    includeTemplateSet: includeTemplateSet.value && !!filename.value,
+    group: templateSetGroup.value
+  })
 })
 
 const templateCount = computed(() => {
@@ -58,11 +146,24 @@ function convertTemplate() {
   try {
     if (!sourceContent.value.trim()) {
       snippets.value = {}
+      outputFormat.value = 'json'
       return
     }
+
+    const format = detectInputFormat(sourceContent.value)
+    outputFormat.value = format === 'xml' ? 'json' : 'xml'
     
-    const templates = parseWebStormTemplate(sourceContent.value)
-    snippets.value = convertToSnippets(templates)
+    if (format === 'xml') {
+      const templates = parseWebStormTemplate(sourceContent.value)
+      snippets.value = convertToSnippets(templates)
+    } else {
+      // Handle both complete JSON objects and partial snippets
+      const content = sourceContent.value.trim()
+      const vsCodeSnippets = content.startsWith('{') ? 
+        JSON.parse(content) :
+        JSON.parse(`{${content}}`)
+      snippets.value = vsCodeSnippets
+    }
   } catch (error) {
     console.error('Error converting template:', error)
     toast.error('Invalid template format')
@@ -76,7 +177,20 @@ function clearSource() {
 
 async function copyToClipboard() {
   try {
-    const content = getFormattedContent(snippets.value, includeBrackets.value)
+    let content = ''
+    if (isCreationMode.value) {
+      content = outputType.value === 'snippet'
+        ? getFormattedContent(snippets.value, includeBrackets.value)
+        : convertToWebStormTemplate(snippets.value, {
+            includeTemplateSet: false,
+            group: 'Custom'
+          })
+    } else {
+      content = outputFormat.value === 'json'
+        ? getFormattedContent(snippets.value, includeBrackets.value)
+        : formattedOutput.value
+    }
+    
     await navigator.clipboard.writeText(content)
     toast.success('Copied to clipboard!')
   } catch (error) {
@@ -86,19 +200,37 @@ async function copyToClipboard() {
 }
 
 function downloadJson() {
-  const content = getFormattedContent(snippets.value, includeBrackets.value)
+  const content = outputFormat.value === 'json'
+    ? getFormattedContent(snippets.value, includeBrackets.value)
+    : formattedOutput.value
   
-  const blob = new Blob([content], { type: 'application/json' })
+  const extension = outputFormat.value === 'json' ? 'json' : 'xml'
+  
+  const blob = new Blob([content], { 
+    type: outputFormat.value === 'json' ? 'application/json' : 'application/xml' 
+  })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `${filename.value}.json`
+  a.download = `${filename.value}.${extension}`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
 
+function handleFileSelected(content: string) {
+  sourceContent.value = content
+}
+
+function handleSnippetGenerated(snippetContent: string) {
+  snippets.value = JSON.parse(`{${snippetContent}}`)
+}
+
 // Watch for source content changes
-watch(sourceContent, convertTemplate)
+watch(sourceContent, (newValue) => {
+  if (!isCreationMode.value) {
+    convertTemplate()
+  }
+})
 </script>
