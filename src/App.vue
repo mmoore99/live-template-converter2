@@ -12,7 +12,7 @@
           </button>
         </div>
         <h1 class="text-3xl font-bold">
-          {{ isCreationMode ? 'Snippet Template Creator' : 'Snippet Template Converter' }}
+          {{ isCreationMode ? 'Snippet/Live Template Creator' : 'Snippet/Live Template Converter' }}
         </h1>
         <div class="w-[120px]"></div>
       </div>
@@ -103,18 +103,22 @@ function switchMode() {
 
 // Initialize mode based on URL path
 onMounted(() => {
-  isCreationMode.value = route.getPath().includes('/create')
-  route.onChange((path) => {
-    isCreationMode.value = path.includes('/create')
-    sourceContent.value = ''
-    snippets.value = {}
-  })
+  const path = window.location.pathname
+  isCreationMode.value = path.includes('/create')
 })
+
+// Watch for route changes
+watch(() => route.getPath(), (path) => {
+  isCreationMode.value = path.includes('/create')
+  sourceContent.value = ''
+  snippets.value = {}
+}, { immediate: true })
 
 // Update URL when mode changes
 watch(isCreationMode, (newValue) => {
   const newPath = newValue ? '/create' : '/'
-  if (route.getPath() !== newPath) {
+  const currentPath = route.getPath()
+  if (currentPath !== newPath) {
     route.setPath(newPath)
   }
 })

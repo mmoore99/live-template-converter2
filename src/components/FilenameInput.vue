@@ -1,7 +1,7 @@
 <template>
   <div class="flex-1">
-    <div class="flex gap-2 items-center">
-      <label class="text-sm font-medium text-gray-700">Output Filename</label>
+    <div class="flex items-center gap-2">
+      <label class="text-sm font-medium text-gray-700">Output File</label>
       <div class="relative flex-1 ml-2">
         <input 
           :value="modelValue"
@@ -13,7 +13,7 @@
         <button
           v-if="modelValue"
           @click="$emit('update:modelValue', '')"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600"
+          class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600"
         >
           <Trash2 class="w-4 h-4" />
         </button>

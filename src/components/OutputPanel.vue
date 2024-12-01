@@ -2,7 +2,7 @@
   <div class="p-4 bg-white rounded-lg shadow">
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-xl font-semibold">Output</h2>
+        <h2 class="text-xl font-semibold">Generated Output</h2>
         <div v-if="isCreationMode" class="mt-2 space-y-1">
           <label class="flex items-center">
             <input
@@ -57,9 +57,10 @@
     </div>
     <MonacoEditor
       v-model="editorContent"
-      :class="{ 'h-[calc(100vh-245px)]': props.isCreationMode }"
       :language="language"
       :read-only="true"
+      :height="isCreationMode ? 'calc(100vh - 240px)' : ''"
+
     />
   </div>
 </template>

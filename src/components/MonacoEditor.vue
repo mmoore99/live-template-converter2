@@ -1,5 +1,11 @@
 <template>
-  <div ref="editorContainer" class="w-full h-[calc(100vh-300px)] border rounded overflow-hidden"></div>
+  <div class="monaco-container">
+    <div 
+      ref="editorContainer" 
+      class="w-full overflow-hidden border rounded"
+      :style="{ height: height || 'calc(100vh - 300px)' }"
+    ></div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -140,6 +146,7 @@ const props = defineProps<{
   modelValue: string
   language: string
   readOnly?: boolean
+  height?: string  // New prop for height
 }>()
 
 const emit = defineEmits<{
@@ -390,3 +397,7 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+/* Remove all z-index related styles */
+</style>

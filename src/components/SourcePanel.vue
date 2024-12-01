@@ -9,14 +9,7 @@
             (templateCount === 1 ? 'snippet' : 'snippets') }} loaded
         </p>
       </div>
-      <div class="flex items-center gap-4">
-        <button 
-          @click="clearAll" 
-          class="px-3.5 py-1.5 text-sm text-white bg-red-600 rounded hover:bg-red-700"
-        >
-          Clear
-        </button>
-      </div>
+      <!-- Remove the clear button div from here -->
     </div>
     
     <div v-if="isCreationMode" class="mb-4">
@@ -26,12 +19,23 @@
       />
     </div>
     
-    <MonacoEditor
-      v-model="editorContent"
-      :class="{ 'h-[calc(100vh-280px)]': isCreationMode }"
-      :language="isCreationMode ? 'typescript' : inputLanguage"
-      @update:modelValue="updateContent"
-    />
+    <!-- Editor section with improved stacking context -->
+    <div class="editor-wrapper">
+      <div class="relative isolate">
+        <button 
+          @click="clearAll" 
+          class="editor-clear-btn"
+        >
+          Clear
+        </button>
+        <MonacoEditor
+          v-model="editorContent"
+          :language="isCreationMode ? 'typescript' : inputLanguage"
+          @update:modelValue="updateContent"
+          :height="isCreationMode ? 'calc(100vh - 350px)' : ''"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -136,3 +140,27 @@ function generateVSCodeSnippet(sourceCode: string) {
   emit('snippet-generated', formattedSnippet)
 }
 </script>
+
+<style scoped>
+.editor-wrapper {
+  position: relative;
+}
+
+.editor-clear-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 9999;
+  padding: 0.3rem 0.75rem;  /* Reduced from 0.375rem 0.875rem */
+  font-size: 0.8125rem;     /* Reduced from 0.875rem */
+  line-height: 1.15rem;     /* Reduced from 1.25rem */
+  color: white;
+  background-color: rgb(220 38 38);
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.editor-clear-btn:hover {
+  background-color: rgb(185 28 28);
+}
+</style>

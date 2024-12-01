@@ -3,20 +3,23 @@ let currentPath = '/'
 const listeners = new Set<(path: string) => void>()
 
 export function useRoute() {
-  return {
-    getPath: () => currentPath,
-    setPath: (path: string) => {
-      currentPath = path
-      listeners.forEach(listener => listener(path))
-      
-      // Update URL if possible (for non-WebContainer environments)
-      if (typeof window !== 'undefined') {
-        window.history.pushState({}, '', path)
-      }
-    },
-    onChange: (callback: (path: string) => void) => {
-      listeners.add(callback)
-      return () => listeners.delete(callback)
-    }
+  function getPath() {
+      return window.location.pathname;
   }
+
+  function setPath(path: string) {
+      window.history.pushState({}, "", path);
+  }
+
+  function onChange(callback: (path: string) => void) {
+      window.addEventListener("popstate", () => {
+          callback(getPath());
+      });
+  }
+
+  return {
+      getPath,
+      setPath,
+      onChange,
+  };
 }

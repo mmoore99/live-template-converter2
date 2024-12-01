@@ -1,21 +1,21 @@
 <template>
   <div class="flex-1">
-    <div class="flex gap-2 items-center">
-      <label class="text-sm font-medium text-gray-700">Input Filename</label>
+    <div class="flex items-center gap-2">
+      <label class="text-sm font-medium text-gray-700">Input File</label>
       <div class="relative flex-1 ml-2">
         <input 
           ref="fileInput"
           type="text"
           :value="modelValue"
           readonly
+          placeholder="Click here to open explorer or click browse to drag and drop"
           @click="openFileDialog"
           class="w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-[5px] pr-8 cursor-pointer bg-gray-50"
-          placeholder=""
         />
         <button
           v-if="modelValue"
           @click="$emit('update:modelValue', '')"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600"
+          class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600"
         >
           <Trash2 class="w-4 h-4" />
         </button>
