@@ -3,7 +3,7 @@
     <div 
       ref="editorContainer" 
       class="w-full overflow-hidden border rounded"
-      :style="{ height: height || 'calc(100vh - 300px)' }"
+      :style="{ height: height || 'calc(100vh - 200px)' }"
     ></div>
   </div>
 </template>

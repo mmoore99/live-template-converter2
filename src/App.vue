@@ -1,6 +1,6 @@
 <template>
     <div class="min-h-screen p-4 bg-gray-100">
-        <div class="container mx-auto">
+        <div class="container mx-auto max-w-[1800px]">
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-4">
                     <button @click="switchMode" class="px-3.5 py-1.5 text-sm text-white rounded" :class="isCreationMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'">
@@ -13,9 +13,17 @@
                 <div class="w-[120px]"></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div class="flex flex-col">
-                    <SourcePanel v-model="sourceContent" :template-count="templateCount" :is-creation-mode="isCreationMode" @update:is-creation-mode="isCreationMode = $event" @snippet-generated="handleSnippetGenerated" @update:input-filename="inputFilename = $event" @clear="clearSource" />
+                    <SourcePanel
+                        v-model="sourceContent"
+                        :template-count="templateCount"
+                        :is-creation-mode="isCreationMode"
+                        @update:is-creation-mode="isCreationMode = $event"
+                        @snippet-generated="handleSnippetGenerated"
+                        @update:input-filename="inputFilename = $event"
+                        @clear="clearSource"
+                    />
                 </div>
 
                 <div class="flex flex-col">
@@ -23,7 +31,7 @@
                         ref="outputPanelRef"
                         :content="formattedOutput"
                         :filename="filename"
-                        :language="isCreationMode ? (outputType === 'snippet' ? 'vscode-snippet' : 'xml')" :outputFormat === 'json' ? 'vscode-snippet' : 'xml'"
+                        :language="isCreationMode ? (outputType === 'snippet' ? 'vscode-snippet' : 'xml') : (outputFormat === 'json' ? 'vscode-snippet' : 'xml')"
                         :include-template-set="includeTemplateSet"
                         :template-set-group="templateSetGroup"
                         :template-count="templateCount"
@@ -40,7 +48,13 @@
             </div>
         </div>
     </div>
-    <FileNameDialog :is-open="showFileNameDialog" :extension="downloadExtension" :default-filename="getDefaultFilename()" @confirm="handleDownloadConfirm" @close="showFileNameDialog = false" />
+    <FileNameDialog
+        :is-open="showFileNameDialog"
+        :extension="downloadExtension"
+        :default-filename="getDefaultFilename()"
+        @confirm="handleDownloadConfirm"
+        @close="showFileNameDialog = false"
+    />
 </template>
 
 <script setup lang="ts">

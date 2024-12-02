@@ -1,6 +1,6 @@
 <template>
     <div class="p-4 bg-white rounded-lg shadow">
-        <div :class="['flex justify-between', isCreationMode ? 'items-start' : 'items-center  ']">
+        <div :class="['mb-[22px] flex justify-between', isCreationMode ? 'items-start' : 'items-center  ']">
             <div>
                 <h2 class="text-xl font-semibold ">Generated Output</h2>
                 <div v-if="isCreationMode" class="mt-1 space-y-1">
@@ -30,7 +30,7 @@
                 </div>
             </div>
         </div>
-        <div class="mt-4">
+        <div class="">
             <MonacoEditor v-model="editorContent" :language="language" :read-only="true" :height="isCreationMode ? 'calc(100vh - 240px)' : ''" />
         </div>
     </div>
