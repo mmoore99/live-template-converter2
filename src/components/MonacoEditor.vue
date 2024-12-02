@@ -45,6 +45,19 @@ function addTypeScriptTypes(monaco: typeof monacoInstance) {
   `, 'global.d.ts')
 }
 
+// Add this helper function at the top level
+function formatXml(xml: string): string {
+  let formatted = '';
+  let indent = '';
+  const tab = '  '; // 2 spaces
+  xml.split(/>\s*</).forEach(function(node) {
+    if (node.match(/^\/\w/)) indent = indent.substring(tab.length); // decrease indent
+    formatted += indent + '<' + node + '>\r\n';
+    if (node.match(/^<?\w[^>]*[^\/]$/)) indent += tab; // increase indent
+  });
+  return formatted.substring(1, formatted.length - 3);
+}
+
 // Register XML language if not already registered
 function registerXmlLanguage(monaco: typeof monacoInstance) {
   if (!monaco.languages.getLanguages().some(lang => lang.id === 'xml')) {
@@ -55,8 +68,9 @@ function registerXmlLanguage(monaco: typeof monacoInstance) {
 
       tokenizer: {
         root: [
+          [/^\s+$/, ''], // Handle whitespace-only lines
           [/[<&]/, { token: 'delimiter.xml', next: '@tag' }],
-          [/[^<&]+/, 'text.xml']
+          [/[^<&\s][\s\S]*?(?=[<&]|$)/, 'text.xml'] // Modified text handling
         ],
 
         tag: [
@@ -74,6 +88,62 @@ function registerXmlLanguage(monaco: typeof monacoInstance) {
         ]
       }
     })
+
+    // Update XML language configuration
+    monaco.languages.setLanguageConfiguration('xml', {
+      brackets: [
+        ['<', '>'],
+        ['<!--', '-->'],
+      ],
+      autoClosingPairs: [
+        { open: '<', close: '>' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+      ],
+      surroundingPairs: [
+        { open: '<', close: '>' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+      ],
+      folding: {
+        markers: {
+          start: new RegExp('^\\s*<!--\\s*#region\\b.*-->'),
+          end: new RegExp('^\\s*<!--\\s*#endregion\\b.*-->')
+        }
+      },
+      onEnterRules: [
+        {
+          beforeText: new RegExp(`<([_:\\w][_:\\w-.\\d]*)([^/>]*(?!/)>)[^<]*$`, 'i'),
+          afterText: /^<\/([_:\w][_:\w-.\d]*)\s*>$/i,
+          action: { indentAction: monaco.languages.IndentAction.IndentOutdent }
+        },
+        {
+          beforeText: new RegExp(`<(\\w[\\w\\d]*)([^/>]*(?!/)>)[^<]*$`, 'i'),
+          action: { indentAction: monaco.languages.IndentAction.Indent }
+        },
+        {
+          beforeText: /<\w[^>]*$/,
+          action: { indentAction: monaco.languages.IndentAction.Indent }
+        }
+      ],
+      // Add indentation rules
+      indentationRules: {
+        increaseIndentPattern: /<(?!\?|!|\/)[^>]*>$/,
+        decreaseIndentPattern: /^<\/[^>]*>/
+      }
+    })
+
+    // Register a formatter for XML
+    monaco.languages.registerDocumentFormattingEditProvider('xml', {
+      provideDocumentFormattingEdits: (model) => {
+        const text = model.getValue();
+        const formatted = formatXml(text);
+        return [{
+          range: model.getFullModelRange(),
+          text: formatted
+        }];
+      }
+    });
   }
 }
 
@@ -285,7 +355,7 @@ onMounted(async () => {
     }
 
     editor = monaco.editor.create(editorContainer.value, {
-    value: props.modelValue,
+    value: props.modelValue.trim(), // Trim the initial value
     language: props.language === 'typescript' ? 'typescript' : 
              props.language === 'vscode-snippet' ? 'vscode-snippet' : 
              props.language,
@@ -296,7 +366,7 @@ onMounted(async () => {
     readOnly: props.readOnly,
     fontSize: 14,
     tabSize: 2,
-    wordWrap: 'off',
+    wordWrap: 'on', // Change from 'off' to 'on'
     lineNumbers: 'on',
     renderWhitespace: 'none',
     bracketPairColorization: {
@@ -351,8 +421,26 @@ onMounted(async () => {
       showFolders: false,
       showInlineDetails: true,
       showStatusBar: true,
-    }
+    },
+    wrappingIndent: 'indent',
+    renderWhitespace: 'selection'
   })
+
+    // Add specific format options for XML
+    if (props.language === 'xml') {
+      const model = editor.getModel()
+      if (model) {
+        model.updateOptions({
+          insertSpaces: true,
+          tabSize: 2,
+          trimAutoWhitespace: false
+        })
+        // Format the initial XML content
+        setTimeout(() => {
+          editor?.getAction('editor.action.formatDocument')?.run();
+        }, 100);
+      }
+    }
 
     editor.onDidChangeModelContent(() => {
       const value = editor?.getValue() || ''
@@ -360,12 +448,19 @@ onMounted(async () => {
     })
 
     // Format the initial content
-    if (props.language === 'jsonc' && editor) {
-      editor.getAction('editor.action.formatDocument')?.run()
+    if (props.language === 'jsonc' || props.language === 'xml' && editor) {
+      setTimeout(() => {
+        editor?.getAction('editor.action.formatDocument')?.run()
+      }, 100)
     }
 
     // Add keyboard shortcuts
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      editor?.getAction('editor.action.formatDocument')?.run()
+    })
+
+    // Add format command to editor
+    editor.addCommand(monacoInstance.value.KeyMod.CtrlCmd | monacoInstance.value.KeyCode.KeyF, () => {
       editor?.getAction('editor.action.formatDocument')?.run()
     })
   } catch (error) {
@@ -375,9 +470,16 @@ onMounted(async () => {
 
 watch(() => props.modelValue, (newValue) => {
   if (editor && newValue !== editor.getValue()) {
-    editor.setValue(newValue)
-    if (props.language === 'jsonc' || props.language === 'json') {
-      editor.getAction('editor.action.formatDocument')?.run()
+    if (props.language === 'xml') {
+      const formatted = formatXml(newValue.trim());
+      editor.setValue(formatted);
+    } else {
+      editor.setValue(newValue.trim());
+    }
+    if (props.language === 'jsonc' || props.language === 'json' || props.language === 'xml') {
+      setTimeout(() => {
+        editor?.getAction('editor.action.formatDocument')?.run()
+      }, 100)
     }
   }
 })

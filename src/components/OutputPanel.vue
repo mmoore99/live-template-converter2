@@ -1,8 +1,8 @@
 <template>
     <div class="p-4 bg-white rounded-lg shadow">
-        <div :class="['flex justify-between', isCreationMode ? 'items-start' : 'items-center h-10 mb-4']">
+        <div :class="['flex justify-between', isCreationMode ? 'items-start' : 'items-center  ']">
             <div>
-                <h2 class="mb-1 text-xl font-semibold">Generated Output</h2>
+                <h2 class="text-xl font-semibold ">Generated Output</h2>
                 <div v-if="isCreationMode" class="mt-1 space-y-1">
                     <label class="flex items-center">
                         <input type="radio" v-model="outputType" value="snippet" class="w-4 h-4 text-blue-600" />
@@ -13,7 +13,7 @@
                         <span class="ml-2 text-sm text-gray-700">Live Template</span>
                     </label>
                 </div>
-                <p v-if="content.trim() && !isCreationMode" class="text-sm text-gray-600">{{ templateCount }} {{ language === "xml" ? (templateCount === 1 ? "template" : "templates") : templateCount === 1 ? "snippet" : "snippets" }} loaded</p>
+                <p v-if="content.trim() && !isCreationMode" class="text-sm text-gray-600">{{ templateCount }} {{ language === "xml" ? (templateCount === 1 ? "live template" : "live templates") : templateCount === 1 ? "snippet" : "snippets" }} generated</p>
             </div>
             <div class="flex items-center space-x-4">
                 <TemplateSetControls
