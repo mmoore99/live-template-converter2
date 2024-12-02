@@ -28,6 +28,13 @@
             <MonacoEditor v-model="editorContent" :language="language" :read-only="true" :height="isCreationMode ? 'calc(100vh - 240px)' : ''" />
         </div>
     </div>
+    <FileNameDialog
+        :is-open="showFileNameDialog"
+        :extension="downloadExtension"
+        :default-filename="getDefaultFilename()"
+        @confirm="handleDownloadConfirm"
+        @close="showFileNameDialog = false"
+    />
 </template>
 
 <script setup lang="ts">
@@ -35,6 +42,7 @@
     import MonacoEditor from "./MonacoEditor.vue";
     import OutputToggle from "./OutputToggle.vue";
     import TemplateSetControls from "./TemplateSetControls.vue";
+    import FileNameDialog from "./FileNameDialog.vue";
     import { useToast } from "vue-toastification";
 
     const toast = useToast();
@@ -48,6 +56,7 @@
         templateSetGroup: string;
         templateCount?: number;
         isCreationMode: boolean;
+        (e: "update:output-type", value: string): void;
     }>();
 
     const emit = defineEmits<{
@@ -56,6 +65,7 @@
         (e: "update:include-brackets", value: boolean): void;
         (e: "update:include-template-set", value: boolean): void;
         (e: "update:template-set-group", value: string): void;
+        (e: "update:output-type", value: string): void;
     }>();
 
     const outputType = ref("snippet");
@@ -102,8 +112,39 @@
             });
     }
 
-    // Handle download functionality
+    const showFileNameDialog = ref(false);
+    const downloadExtension = ref("");
+
     function handleDownload() {
-        emit("download", editorContent.value);
+        downloadExtension.value = props.language === 'vscode-snippet' ? 'json' : 'xml';
+        showFileNameDialog.value = true;
+    }
+
+    function handleDownloadConfirm(filename: string) {
+        const blob = new Blob([editorContent.value], {
+            type: props.language === 'vscode-snippet' ? "application/json" : "application/xml",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${filename}.${downloadExtension.value}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showFileNameDialog.value = false;
+    }
+
+    function getDefaultFilename(): string {
+        const now = new Date();
+        const timestamp = now.getFullYear().toString() + 
+            String(now.getMonth() + 1).padStart(2, "0") + 
+            String(now.getDate()).padStart(2, "0") + 
+            String(now.getHours()).padStart(2, "0") + 
+            String(now.getMinutes()).padStart(2, "0");
+
+        return props.language === 'vscode-snippet' 
+            ? `GeneratedvscodeSnippets-${timestamp}` 
+            : `GeneratedLiveTemplates-${timestamp}`;
     }
 </script>

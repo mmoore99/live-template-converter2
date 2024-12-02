@@ -37,8 +37,6 @@
                         :template-count="templateCount"
                         :include-brackets="includeBrackets"
                         :is-creation-mode="isCreationMode"
-                        @copy="copyToClipboard"
-                        @download="handleDownloadSnippetOrLiveTemplate"
                         @update:output-type="outputType = $event"
                         @update:include-brackets="includeBrackets = $event"
                         @update:include-template-set="includeTemplateSet = $event"
@@ -48,13 +46,6 @@
             </div>
         </div>
     </div>
-    <FileNameDialog
-        :is-open="showFileNameDialog"
-        :extension="downloadExtension"
-        :default-filename="getDefaultFilename()"
-        @confirm="handleDownloadConfirm"
-        @close="showFileNameDialog = false"
-    />
 </template>
 
 <script setup lang="ts">
@@ -69,7 +60,6 @@
     import FilenameInput from "./components/FilenameInput.vue";
     import InputPanel from "./components/InputPanel.vue";
     import OutputPanel from "./components/OutputPanel.vue";
-    import FileNameDialog from "./components/FileNameDialog.vue";
 
     const toast = useToast();
     const sourceContent = ref("");
@@ -82,9 +72,6 @@
     const outputFormat = ref<"xml" | "json">("json");
     const isCreationMode = ref(false);
     const outputType = ref("snippet");
-    const showFileNameDialog = ref(false);
-    const downloadContent = ref<string>("");
-    const downloadExtension = ref("");
 
     const outputPanelRef = ref(null);
 
@@ -176,46 +163,12 @@
         snippets.value = {};
     }
 
-    async function copyToClipboard() {
-        // Invoke copy method directly on OutputPanel component
-        outputPanelRef.value?.copyToClipboard();
-    }
-
-    function handleDownloadSnippetOrLiveTemplate() {
-        const content = outputPanelRef.value?.editorContent || "";
-        downloadContent.value = content;
-        downloadExtension.value = outputFormat.value === "json" ? "json" : "xml";
-        showFileNameDialog.value = true;
-    }
-
-    function handleDownloadConfirm(filename: string) {
-        const blob = new Blob([downloadContent.value], {
-            type: outputFormat.value === "json" ? "application/json" : "application/xml",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${filename}.${downloadExtension.value}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showFileNameDialog.value = false;
-    }
-
     function handleFileSelected(content: string) {
         sourceContent.value = content;
     }
 
     function handleSnippetGenerated(snippetContent: string) {
         snippets.value = JSON.parse(`{${snippetContent}}`);
-    }
-
-    function getDefaultFilename(): string {
-        const now = new Date();
-        const timestamp = now.getFullYear().toString() + String(now.getMonth() + 1).padStart(2, "0") + String(now.getDate()).padStart(2, "0") + String(now.getHours()).padStart(2, "0") + String(now.getMinutes()).padStart(2, "0");
-
-        return outputFormat.value === "json" ? `GeneratedvscodeSnippets-${timestamp}` : `GeneratedLiveTemplates-${timestamp}`;
     }
 
     // Watch for source content changes
