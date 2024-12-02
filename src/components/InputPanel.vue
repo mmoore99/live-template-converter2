@@ -1,223 +1,262 @@
 <template>
-    <div class="p-4 bg-white rounded-lg shadow">
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center flex-1 gap-2">
-                <div>
-                    <h2 class="text-xl font-semibold">{{ panelTitle }}</h2>
-                    <p v-if="modelValue.trim() && !isCreationMode" class="text-sm text-gray-600">{{ templateCount }} {{ detectInputFormat(modelValue) === "xml" ? (templateCount === 1 ? "template" : "templates") : templateCount === 1 ? "snippet" : "snippets" }} loaded</p>
-                </div>
-                <div class="relative flex-1 ml-2">
-                    <input
-                        ref="fileInput"
-                        type="text"
-                        :value="inputFilename"
-                        readonly
-                        placeholder="Click here to open explorer or click browse to drag and drop"
-                        @click="openFileDialog"
-                        class="w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-[5px] pr-8 cursor-pointer bg-gray-50"
-                    />
-                    <button v-if="inputFilename" @click="clearFilename" class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600">
-                        <Trash2 class="w-4 h-4" />
-                    </button>
-                </div>
-                <button @click="showFileExplorer = true" class="h-9 px-3.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2">
-                    <FolderOpen class="w-4 h-4" />
-                    Browse
-                </button>
-
-                <FileExplorer :is-open="showFileExplorer" @close="showFileExplorer = false" @select="handleFileSelect" />
-            </div>
+  <div class="p-4 bg-white rounded-lg shadow">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center flex-1 gap-2">
+        <div>
+          <h2 class="text-xl font-semibold">{{ panelTitle }}</h2>
+          <p v-if="store.sourceContent.trim() && !store.isCreationMode" class="text-sm text-gray-600">
+            {{ store.templateCount }} {{ detectInputFormat(store.sourceContent) === "xml" ? (store.templateCount === 1 ? "template" : "templates") : store.templateCount === 1 ? "snippet" : "snippets" }} loaded
+          </p>
         </div>
-
-        <div v-if="isCreationMode" class="mb-4">
-            <CreationModeInputs v-model="snippetTemplateData" @update:modelValue="updateSnippetTemplateData" />
+        <div class="relative flex-1 ml-2">
+          <input
+            ref="fileInput"
+            type="text"
+            :value="store.inputFilename"
+            readonly
+            placeholder="Click here to open explorer or click browse to drag and drop"
+            @click="openFileDialog"
+            class="w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-[5px] pr-8 cursor-pointer bg-gray-50"
+          />
+          <button 
+            v-if="store.inputFilename" 
+            @click="clearFilename" 
+            class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
         </div>
+        <button 
+          @click="showFileExplorer = true" 
+          class="h-9 px-3.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2"
+        >
+          <FolderOpen class="w-4 h-4" />
+          Browse
+        </button>
 
-        <!-- Editor section with improved stacking context -->
-        <div class="editor-wrapper">
-            <div class="relative isolate">
-                <button @click="clearAll" class="editor-clear-btn">Clear</button>
-                <MonacoEditor v-model="editorContent" :language="isCreationMode ? 'typescript' : inputLanguage" @update:modelValue="updateContent" :height="isCreationMode ? 'calc(100vh - 350px)' : ''" />
-            </div>
-        </div>
+        <FileExplorer
+          :is-open="showFileExplorer"
+          @close="showFileExplorer = false"
+          @select="handleFileSelect"
+        />
+      </div>
     </div>
+
+    <div v-if="store.isCreationMode" class="mb-4">
+      <CreationModeInputs v-model="snippetTemplateData" @update:modelValue="updateSnippetTemplateData" />
+    </div>
+
+    <div class="editor-wrapper">
+      <div class="relative isolate">
+        <button @click="clearAll" class="editor-clear-btn">Clear</button>
+        <MonacoEditor 
+          v-model="editorContent" 
+          :language="store.isCreationMode ? 'typescript' : inputLanguage" 
+          @update:modelValue="updateContent" 
+          :height="store.isCreationMode ? 'calc(100vh - 350px)' : ''" 
+        />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-    import { ref, watch, computed } from "vue";
-    import { useToast } from "vue-toastification";
-    import MonacoEditor from "./MonacoEditor.vue";
-    import CreationModeInputs from "./CreationModeInputs.vue";
-    import FileExplorer from "./FileExplorer.vue";
-    import { Trash2, FolderOpen } from "lucide-vue-next";
-    import { detectInputFormat } from "@/utils/detector";
-    import { generateSnippet, formatSnippetJson } from "@/utils/snippetConverter";
-    import { convertToWebStormTemplate } from "@/utils/vscodeToWebstorm";
+import { ref, computed, watch } from 'vue'
+import { useToast } from 'vue-toastification'
+import { useAppStore } from '@/stores/app'
+import { detectInputFormat } from '@/utils/detector'
+import { generateSnippet, formatSnippetJson } from '@/utils/snippetConverter'
+import { convertToWebStormTemplate } from '@/utils/vscodeToWebstorm'
+import { parseWebStormTemplate, convertToSnippets } from '@/utils/converter'
+import MonacoEditor from './MonacoEditor.vue'
+import CreationModeInputs from './CreationModeInputs.vue'
+import FileExplorer from './FileExplorer.vue'
+import { Trash2, FolderOpen } from 'lucide-vue-next'
 
-    const toast = useToast();
+const store = useAppStore()
+const toast = useToast()
 
-    const props = defineProps<{
-        modelValue: string;
-        templateCount: number;
-        isCreationMode: boolean;
-    }>();
+// Local state
+const showFileExplorer = ref(false)
+const fileInput = ref<HTMLInputElement>()
+const editorContent = ref('')
+const snippetTemplateData = ref({
+  name: '',
+  scope: '',
+  description: '',
+})
 
-    const emit = defineEmits<{
-        (e: "update:modelValue", value: string): void;
-        (e: "clear"): void;
-        (e: "update:is-creation-mode", value: boolean): void;
-        (e: "snippet-generated", value: string): void;
-        (e: "update:input-filename", value: string): void;
-    }>();
+// Watch for store content changes
+watch(() => store.sourceContent, (newValue) => {
+  if (editorContent.value !== newValue) {
+    editorContent.value = newValue
+  }
+}, { immediate: true })
 
-    const editorContent = ref(props.modelValue);
-    const snippetTemplateData = ref({
-        name: "",
-        scope: "",
-        description: "",
-    });
+// Watch for mode changes to reset state
+watch(() => store.isCreationMode, () => {
+  editorContent.value = ''
+  snippetTemplateData.value = {
+    name: '',
+    scope: '',
+    description: ''
+  }
+})
 
-    const inputLanguage = computed(() => {
-        if (props.isCreationMode) {
-            return "typescript";
-        }
-        return detectInputFormat(editorContent.value) === "xml" ? "xml" : "vscode-snippet";
-    });
+// Watch for mode changes to reset the editor content
+watch(() => store.isCreationMode, () => {
+  editorContent.value = ''
+  snippetTemplateData.value = {
+    name: '',
+    scope: '',
+    description: ''
+  }
+})
 
-    const panelTitle = computed(() => {
-        if (!editorContent.value.trim() || props.isCreationMode) return "Source Input";
-        const format = detectInputFormat(editorContent.value);
-        return format === "xml" ? "Live Templates" : "VSCode Snippets";
-    });
+const inputLanguage = computed(() => {
+  if (store.isCreationMode) return 'typescript'
+  return detectInputFormat(editorContent.value) === 'xml' ? 'xml' : 'vscode-snippet'
+})
 
-    watch(
-        () => props.modelValue,
-        (newValue) => {
-            editorContent.value = newValue;
-        }
-    );
+const panelTitle = computed(() => {
+  if (!editorContent.value.trim() || store.isCreationMode) return 'Source Input'
+  const format = detectInputFormat(editorContent.value)
+  return format === 'xml' ? 'Live Templates' : 'VSCode Snippets'
+})
 
-    function updateContent(value: string) {
-        emit("update:modelValue", value);
-        if (props.isCreationMode) {
-            generateVSCodeSnippet(value);
-        }
+function updateContent(value: string) {
+  store.setSourceContent(value)
+  editorContent.value = value
+  if (store.isCreationMode) {
+    generateVSCodeSnippet(value)
+  } else {
+    convertTemplate()
+  }
+}
+
+function clearAll() {
+  store.clearContent()
+  store.setInputFilename('')
+  store.setSnippets({})
+  editorContent.value = ''
+  snippetTemplateData.value = {
+    name: '',
+    scope: '',
+    description: ''
+  }
+}
+
+function clearFilename() {
+  store.setInputFilename('')
+}
+
+function updateSnippetTemplateData(data: typeof snippetTemplateData.value) {
+  snippetTemplateData.value = data
+  generateVSCodeSnippet(editorContent.value)
+}
+
+function generateVSCodeSnippet(sourceCode: string) {
+  if (!sourceCode.trim()) {
+    store.setSnippets({})
+    return
+  }
+
+  const snippet = generateSnippet({
+    name: snippetTemplateData.value.name || 'untitled',
+    prefix: snippetTemplateData.value.name || 'untitled',
+    description: snippetTemplateData.value.description,
+    scope: snippetTemplateData.value.scope,
+    sourceCode,
+  })
+
+  if (!Object.keys(snippet).length) {
+    store.setSnippets({})
+    return
+  }
+
+  store.setSnippets(snippet)
+}
+
+function convertTemplate() {
+  try {
+    if (!store.sourceContent.trim()) {
+      store.setSnippets({})
+      store.setOutputFormat('json')
+      return
     }
 
-    function clearAll() {
-        emit("clear");
-        emit("update:input-filename", "");
+    const format = detectInputFormat(store.sourceContent)
+    store.setOutputFormat(format === 'xml' ? 'json' : 'xml')
+
+    if (format === 'xml') {
+      const templates = parseWebStormTemplate(store.sourceContent)
+      store.setSnippets(convertToSnippets(templates))
+    } else {
+      const content = store.sourceContent.trim()
+      const vsCodeSnippets = content.startsWith('{') ? 
+        JSON.parse(content) : 
+        JSON.parse(`{${content}}`)
+      store.setSnippets(vsCodeSnippets)
     }
+  } catch (error) {
+    console.error('Error converting template:', error)
+    toast.error('Invalid template format')
+  }
+}
 
-    function updateSnippetTemplateData(data: typeof snippetTemplateData.value) {
-        snippetTemplateData.value = data;
-        generateVSCodeSnippet(editorContent.value);
+function openFileDialog() {
+  try {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json,.xml'
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      store.setInputFilename(file.name)
+      
+      const reader = new FileReader()
+      reader.onload = () => {
+        const content = reader.result as string
+        updateContent(content)
+      }
+      reader.readAsText(file)
+      input.value = ''
     }
+    
+    input.click()
+  } catch (error) {
+    console.error('Error reading file:', error)
+    toast.error('Failed to read file')
+  }
+}
 
-    function generateVSCodeSnippet(sourceCode: string) {
-        const snippet = generateSnippet({
-            name: snippetTemplateData.value.name || "untitled",
-            prefix: snippetTemplateData.value.name || "untitled",
-            description: snippetTemplateData.value.description,
-            scope: snippetTemplateData.value.scope,
-            sourceCode,
-        });
-
-        // Don't proceed if snippet is empty
-        if (!Object.keys(snippet).length) {
-            emit("snippet-generated", "");
-            return;
-        }
-
-        const formattedSnippet = formatSnippetJson(snippet);
-
-        const snippetName = snippetTemplateData.value.name || "untitled";
-
-        // Generate WebStorm live template
-        const webstormTemplate = convertToWebStormTemplate(
-            {
-                [snippetName]: {
-                    prefix: snippetName,
-                    body: snippet[snippetName].body,
-                    description: snippetTemplateData.value.description || "",
-                    scope: snippetTemplateData.value.scope || "",
-                },
-            },
-            {
-                includeTemplateSet: false,
-                group: "Custom",
-            }
-        );
-
-        emit("snippet-generated", formattedSnippet);
-    }
-
-    // Add new refs
-    const showFileExplorer = ref(false);
-    const fileInput = ref<HTMLInputElement>();
-    const inputFilename = ref("");
-
-    // Add new file handling methods
-    function openFileDialog() {
-        try {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = ".json,.xml";
-
-            input.onchange = async (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (!file) return;
-                inputFilename.value = file.name;
-                emit("update:input-filename", file.name);
-
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const content = reader.result as string;
-                    updateContent(content);
-                };
-                reader.readAsText(file);
-                input.value = "";
-            };
-
-            input.click();
-        } catch (error) {
-            console.error("Error reading file:", error);
-            toast.error("Failed to read file");
-        }
-    }
-
-    function handleFileSelect(filename: string, content: string) {
-        inputFilename.value = filename;
-        emit("update:input-filename", filename);
-        updateContent(content);
-    }
-
-    function clearFilename() {
-        inputFilename.value = "";
-        emit("update:input-filename", "");
-    }
+function handleFileSelect(filename: string, content: string) {
+  store.setInputFilename(filename)
+  updateContent(content)
+}
 </script>
 
 <style scoped>
-    .editor-wrapper {
-        position: relative;
-    }
+.editor-wrapper {
+  position: relative;
+}
 
-    .editor-clear-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 9999;
-        padding: 0.3rem 0.75rem; /* Reduced from 0.375rem 0.875rem */
-        font-size: 0.8125rem; /* Reduced from 0.875rem */
-        line-height: 1.15rem; /* Reduced from 1.25rem */
-        color: white;
-        background-color: rgb(220 38 38);
-        border-radius: 0.25rem;
-        transition: background-color 0.2s;
-    }
+.editor-clear-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 9999;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.15rem;
+  color: white;
+  background-color: rgb(220 38 38);
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
 
-    .editor-clear-btn:hover {
-        background-color: rgb(185 28 28);
-    }
+.editor-clear-btn:hover {
+  background-color: rgb(185 28 28);
+}
 </style>

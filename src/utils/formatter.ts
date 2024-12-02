@@ -1,5 +1,3 @@
-import { type Ref } from 'vue'
-
 export interface SnippetOutput {
   [key: string]: {
     prefix: string
@@ -28,10 +26,10 @@ function preserveIndentation(lines: string[]): string[] {
 }
 
 export function formatSnippetOutput(
-  snippets: Ref<SnippetOutput>,
+  snippets: SnippetOutput,
   includeBrackets: boolean = false
 ): string {
-  const formattedSnippets = { ...snippets.value }
+  const formattedSnippets = { ...snippets }
   
   // Process each snippet's body to preserve formatting
   for (const key in formattedSnippets) {
@@ -40,7 +38,7 @@ export function formatSnippetOutput(
     }
   }
   
-  const output = JSON.stringify(formattedSnippets, null, 2)
+  const output = JSON.stringify(formattedSnippets, null, 2).trim()
   if (!output || output === '{}') return ''
   
   if (includeBrackets) {
