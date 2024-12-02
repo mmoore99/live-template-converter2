@@ -25,8 +25,8 @@
                 />
                 <OutputToggle v-if="language === 'vscode-snippet' && content.trim()" v-model="localIncludeBrackets" @update:modelValue="$emit('update:include-brackets', $event)" />
                 <div class="space-x-2">
-                    <button @click="$emit('copy')" class="px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Copy to Clipboard</button>
-                    <button v-if="!props.isCreationMode" @click="$emit('download')" class="px-3.5 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700">Download</button>
+                    <button @click="copyToClipboard" class="px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Copy to Clipboard</button>
+                    <button v-if="!props.isCreationMode" @click="handleDownload" class="px-3.5 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700">Download</button>
                 </div>
             </div>
         </div>
@@ -41,6 +41,9 @@
     import MonacoEditor from "./MonacoEditor.vue";
     import OutputToggle from "./OutputToggle.vue";
     import TemplateSetControls from "./TemplateSetControls.vue";
+    import { useToast } from "vue-toastification";
+
+    const toast = useToast();
 
     const props = defineProps<{
         content: string;
@@ -82,4 +85,26 @@
             localIncludeBrackets.value = newValue;
         }
     );
+
+    // Expose editorContent to parent components
+    defineExpose({
+        editorContent
+    });
+
+    // Handle copy functionality within OutputPanel
+    function copyToClipboard() {
+        navigator.clipboard.writeText(editorContent.value)
+            .then(() => {
+                toast.success("Copied to clipboard!");
+            })
+            .catch((error) => {
+                console.error("Error copying to clipboard:", error);
+                toast.error("Failed to copy to clipboard");
+            });
+    }
+
+    // Handle download functionality
+    function handleDownload() {
+        emit("download", editorContent.value);
+    }
 </script>

@@ -20,9 +20,10 @@
 
                 <div class="flex flex-col">
                     <OutputPanel
+                        ref="outputPanelRef"
                         :content="formattedOutput"
                         :filename="filename"
-                        :language="isCreationMode ? (outputType === 'snippet' ? 'vscode-snippet' : 'xml') : outputFormat === 'json' ? 'vscode-snippet' : 'xml'"
+                        :language="isCreationMode ? (outputType === 'snippet' ? 'vscode-snippet' : 'xml')" :outputFormat === 'json' ? 'vscode-snippet' : 'xml'"
                         :include-template-set="includeTemplateSet"
                         :template-set-group="templateSetGroup"
                         :template-count="templateCount"
@@ -39,13 +40,7 @@
             </div>
         </div>
     </div>
-    <FileNameDialog
-        :is-open="showFileNameDialog"
-        :extension="downloadExtension"
-        :default-filename="getDefaultFilename()"
-        @confirm="handleDownloadConfirm"
-        @close="showFileNameDialog = false"
-    />
+    <FileNameDialog :is-open="showFileNameDialog" :extension="downloadExtension" :default-filename="getDefaultFilename()" @confirm="handleDownloadConfirm" @close="showFileNameDialog = false" />
 </template>
 
 <script setup lang="ts">
@@ -60,7 +55,7 @@
     import FilenameInput from "./components/FilenameInput.vue";
     import SourcePanel from "./components/SourcePanel.vue";
     import OutputPanel from "./components/OutputPanel.vue";
-    import FileNameDialog from './components/FileNameDialog.vue';
+    import FileNameDialog from "./components/FileNameDialog.vue";
 
     const toast = useToast();
     const sourceContent = ref("");
@@ -74,8 +69,10 @@
     const isCreationMode = ref(false);
     const outputType = ref("snippet");
     const showFileNameDialog = ref(false);
-    const downloadContent = ref<string>('');
-    const downloadExtension = ref('');
+    const downloadContent = ref<string>("");
+    const downloadExtension = ref("");
+
+    const outputPanelRef = ref(null);
 
     const route = useRoute();
 
@@ -166,33 +163,12 @@
     }
 
     async function copyToClipboard() {
-        try {
-            let content = "";
-            if (isCreationMode.value) {
-                content =
-                    outputType.value === "snippet"
-                        ? getFormattedContent(snippets.value, includeBrackets.value)
-                        : convertToWebStormTemplate(snippets.value, {
-                              includeTemplateSet: false,
-                              group: "Custom",
-                          });
-            } else {
-                content = outputFormat.value === "json" ? getFormattedContent(snippets.value, includeBrackets.value) : formattedOutput.value;
-            }
-
-            await navigator.clipboard.writeText(content);
-            toast.success("Copied to clipboard!");
-        } catch (error) {
-            console.error("Error copying to clipboard:", error);
-            toast.error("Failed to copy to clipboard");
-        }
+        // Invoke copy method directly on OutputPanel component
+        outputPanelRef.value?.copyToClipboard();
     }
 
     function handleDownloadSnippetOrLiveTemplate() {
-        const content = outputFormat.value === "json" 
-            ? getFormattedContent(snippets.value, includeBrackets.value) 
-            : formattedOutput.value;
-            
+        const content = outputPanelRef.value?.editorContent || "";
         downloadContent.value = content;
         downloadExtension.value = outputFormat.value === "json" ? "json" : "xml";
         showFileNameDialog.value = true;
@@ -223,15 +199,9 @@
 
     function getDefaultFilename(): string {
         const now = new Date();
-        const timestamp = now.getFullYear().toString() +
-            String(now.getMonth() + 1).padStart(2, '0') +
-            String(now.getDate()).padStart(2, '0') +
-            String(now.getHours()).padStart(2, '0') +
-            String(now.getMinutes()).padStart(2, '0');
-            
-        return outputFormat.value === 'json' 
-            ? `GeneratedvscodeSnippets-${timestamp}`
-            : `GeneratedLiveTemplates-${timestamp}`;
+        const timestamp = now.getFullYear().toString() + String(now.getMonth() + 1).padStart(2, "0") + String(now.getDate()).padStart(2, "0") + String(now.getHours()).padStart(2, "0") + String(now.getMinutes()).padStart(2, "0");
+
+        return outputFormat.value === "json" ? `GeneratedvscodeSnippets-${timestamp}` : `GeneratedLiveTemplates-${timestamp}`;
     }
 
     // Watch for source content changes
