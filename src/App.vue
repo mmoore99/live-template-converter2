@@ -56,8 +56,6 @@
     import { convertToWebStormTemplate } from "./utils/vscodeToWebstorm";
     import { detectInputFormat } from "./utils/detector";
     import { formatSnippetOutput, getFormattedContent, type SnippetOutput } from "./utils/formatter";
-    import InputFilenameField from "./components/InputFilenameField.vue";
-    import FilenameInput from "./components/FilenameInput.vue";
     import InputPanel from "./components/InputPanel.vue";
     import OutputPanel from "./components/OutputPanel.vue";
 
@@ -163,16 +161,12 @@
         snippets.value = {};
     }
 
-    function handleFileSelected(content: string) {
-        sourceContent.value = content;
-    }
-
     function handleSnippetGenerated(snippetContent: string) {
         snippets.value = JSON.parse(`{${snippetContent}}`);
     }
 
     // Watch for source content changes
-    watch(sourceContent, (newValue) => {
+    watch(sourceContent, () => {
         if (!isCreationMode.value) {
             convertTemplate();
         }
