@@ -241,37 +241,50 @@ onMounted(async () => {
 
     // Enhanced theme with better syntax highlighting
     monaco.editor.defineTheme('snippetTheme', {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [
-      // XML specific rules
-      { token: 'tag.xml', foreground: '569CD6', fontStyle: 'bold' },
-      { token: 'attribute.name.xml', foreground: '9CDCFE' },
-      { token: 'attribute.value.xml', foreground: 'CE9178' },
-      { token: 'delimiter.xml', foreground: '808080' },
-      { token: 'text.xml', foreground: 'D4D4D4' },
-      { token: 'entity.xml', foreground: 'D7BA7D' },
-      // JSON specific rules
-      { token: 'string', foreground: 'CE9178' },
-      { token: 'number', foreground: 'B5CEA8' },
-      { token: 'keyword', foreground: 'C586C0' },
-      { token: 'delimiter.bracket', foreground: 'FFFFFF' },
-      { token: 'delimiter.array', foreground: 'FFFFFF' },
-      { token: 'delimiter.comma', foreground: 'FFFFFF' },
-      { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
-      { token: 'variable.parameter', foreground: '569CD6', fontStyle: 'bold' }
-    ],
-    colors: {
-      'editor.background': '#000000',
-      'editor.foreground': '#FFFFFF',
-      'editor.lineHighlightBackground': '#000000',
-      'editorLineNumber.foreground': '#999999',
-      'editor.selectionBackground': '#ADD6FF',
-      'editor.inactiveSelectionBackground': '#E5EBF1',
-      'editorIndentGuide.background': '#D3D3D3',
-      'editorIndentGuide.activeBackground': '#A9A9A9'
-    }
-  })
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        // XML specific rules
+        { token: 'tag.xml', foreground: '569CD6', fontStyle: 'bold' },
+        { token: 'attribute.name.xml', foreground: '9CDCFE' },
+        { token: 'attribute.value.xml', foreground: 'CE9178' },
+        { token: 'delimiter.xml', foreground: '808080' },
+        { token: 'text.xml', foreground: 'D4D4D4' },
+        { token: 'entity.xml', foreground: 'D7BA7D' },
+        // JSON specific rules
+        { token: 'string.key.json', foreground: '9CDCFE' },  // Property names in blue
+        { token: 'string.value.json', foreground: 'CE9178' }, // String values in orange
+        { token: 'number', foreground: 'B5CEA8' },
+        { token: 'keyword', foreground: 'C586C0' },
+        { token: 'delimiter.bracket', foreground: 'FFFFFF' },
+        { token: 'delimiter.array', foreground: 'FFFFFF' },
+        { token: 'delimiter.comma', foreground: 'FFFFFF' },
+        { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+        { token: 'variable.parameter', foreground: '569CD6', fontStyle: 'bold' },
+        // Updated JSON specific rules
+        { token: 'property.json', foreground: '9CDCFE' },          // Property names
+        { token: 'string.json', foreground: 'CE9178' },           // String values
+        { token: 'variable.snippet', foreground: '569CD6' },      // Snippet variables like ${1}
+        { token: 'variable.name.snippet', foreground: 'CE9178' }, // Variable labels
+        { token: 'delimiter.snippet', foreground: 'D4D4D4' },     // Variable delimiters
+        { token: 'number', foreground: 'B5CEA8' },
+        { token: 'keyword', foreground: 'C586C0' },
+        { token: 'delimiter.bracket', foreground: 'FFFFFF' },
+        { token: 'delimiter.array', foreground: 'FFFFFF' },
+        { token: 'delimiter.comma', foreground: 'FFFFFF' },
+        { token: 'comment', foreground: '6A9955', fontStyle: 'italic' }
+      ],
+      colors: {
+        'editor.background': '#000000',
+        'editor.foreground': '#FFFFFF',
+        'editor.lineHighlightBackground': '#000000',
+        'editorLineNumber.foreground': '#999999',
+        'editor.selectionBackground': '#ADD6FF',
+        'editor.inactiveSelectionBackground': '#E5EBF1',
+        'editorIndentGuide.background': '#D3D3D3',
+        'editorIndentGuide.activeBackground': '#A9A9A9'
+      }
+    })
 
     // Configure JSON language features with enhanced schema
     if (props.language === 'jsonc') {
@@ -321,38 +334,82 @@ onMounted(async () => {
     // Enhanced tokenizer for VSCode snippet variables
     if (props.language === 'jsonc') {
       monaco.languages.setMonarchTokensProvider('jsonc', {
+        defaultToken: '',
+        tokenPostfix: '.json',
+
+        tokenizer: {
+          root: [
+            // Special snippet variable highlighting
+            [/(\$)(\d+)/, ['variable.other', 'variable.other']],
+            [/(\$\{)([^:}]+)(:)([^}]+)(\})/, ['variable.parameter', 'variable.parameter', 'variable.parameter', 'variable.parameter', 'variable.parameter']],
+            [/(\$\{)([^}]+)(\})/, ['variable.parameter', 'variable.parameter', 'variable.parameter']],
+            
+            // Updated JSON syntax for property names vs values
+            [/"([^"\\]|\\.)*"(?=\s*:)/, 'string.key.json'],  // Property names
+            [/"([^"\\]|\\.)*"/, 'string.value.json'],        // String values
+            [/[{}]/, 'delimiter.bracket'],
+            [/[[\]]/, 'delimiter.array'],
+            [/[,]/, 'delimiter.comma'],
+            [/[0-9]+/, 'number'],
+            [/true|false/, 'keyword'],
+            [/null/, 'keyword'],
+            
+            // Comments
+            [/\/\/.*$/, 'comment.line'],
+            [/\/\*/, 'comment', '@comment']
+          ],
+          comment: [
+            [/[^/*]+/, 'comment.block'],
+            [/\*\//, 'comment.block', '@pop'],
+            [/[/*]/, 'comment.block']
+          ]
+        }
+      })
+    }
+
+    // Update the tokenizer for VSCode snippets and JSONC
+    const jsonTokenizer = {
+      root: [
+        // Property names (before colon)
+        [/"([^"\\]|\\.)*"(?=\s*:)/, 'property.json'],
+        
+        // Snippet variable patterns
+        [/(\$)(\d+)/, 'variable.snippet'],
+        [/(\$\{)(\d+)(:)([^|}]+)(\})/, ['delimiter.snippet', 'variable.snippet', 'delimiter.snippet', 'variable.name.snippet', 'delimiter.snippet']],
+        [/(\$\{)(\d+)(\|)([^}]+)(\|)(\})/, ['delimiter.snippet', 'variable.snippet', 'delimiter.snippet', 'variable.name.snippet', 'delimiter.snippet', 'delimiter.snippet']],
+        
+        // Standard JSON syntax
+        [/"([^"\\]|\\.)*"/, 'string.json'],
+        [/[{}]/, 'delimiter.bracket'],
+        [/[[\]]/, 'delimiter.array'],
+        [/,/, 'delimiter.comma'],
+        [/-?\d+\.?\d*([eE][+-]?\d+)?/, 'number'],
+        [/true|false/, 'keyword'],
+        [/null/, 'keyword'],
+        
+        // Comments
+        [/\/\/.*$/, 'comment'],
+        [/\/\*/, 'comment', '@comment']
+      ],
+      comment: [
+        [/[^/*]+/, 'comment'],
+        [/\*\//, 'comment', '@pop'],
+        [/[/*]/, 'comment']
+      ]
+    };
+
+    // Apply the tokenizer to both JSONC and vscode-snippet languages
+    monaco.languages.setMonarchTokensProvider('jsonc', {
       defaultToken: '',
       tokenPostfix: '.json',
+      tokenizer: jsonTokenizer
+    });
 
-      tokenizer: {
-        root: [
-          // Special snippet variable highlighting
-          [/(\$)(\d+)/, ['variable.other', 'variable.other']],
-          [/(\$\{)([^:}]+)(:)([^}]+)(\})/, ['variable.parameter', 'variable.parameter', 'variable.parameter', 'variable.parameter', 'variable.parameter']],
-          [/(\$\{)([^}]+)(\})/, ['variable.parameter', 'variable.parameter', 'variable.parameter']],
-          
-          // Standard JSON syntax
-          [/"([^"\\]|\\.)*"/, 'string'],
-          [/[{}]/, 'delimiter.bracket'],
-          [/[[\]]/, 'delimiter.array'],
-          [/[,]/, 'delimiter.comma'],
-          [/[0-9]+/, 'number'],
-          [/true|false/, 'keyword'],
-          [/null/, 'keyword'],
-          
-          // Comments
-          [/\/\/.*$/, 'comment.line'],
-          [/\/\*/, 'comment.block', '@comment']
-        ],
-        
-        comment: [
-          [/[^/*]+/, 'comment.block'],
-          [/\*\//, 'comment.block', '@pop'],
-          [/[/*]/, 'comment.block']
-        ]
-      }
-    })
-    }
+    monaco.languages.setMonarchTokensProvider('vscode-snippet', {
+      defaultToken: '',
+      tokenPostfix: '.json',
+      tokenizer: jsonTokenizer
+    });
 
     editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue.trim(), // Trim the initial value
