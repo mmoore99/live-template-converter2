@@ -15,7 +15,7 @@
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div class="flex flex-col">
-                    <SourcePanel
+                    <InputPanel
                         v-model="sourceContent"
                         :template-count="templateCount"
                         :is-creation-mode="isCreationMode"
@@ -67,7 +67,7 @@
     import { formatSnippetOutput, getFormattedContent, type SnippetOutput } from "./utils/formatter";
     import InputFilenameField from "./components/InputFilenameField.vue";
     import FilenameInput from "./components/FilenameInput.vue";
-    import SourcePanel from "./components/SourcePanel.vue";
+    import InputPanel from "./components/InputPanel.vue";
     import OutputPanel from "./components/OutputPanel.vue";
     import FileNameDialog from "./components/FileNameDialog.vue";
 

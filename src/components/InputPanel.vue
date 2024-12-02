@@ -1,7 +1,7 @@
 <template>
     <div class="p-4 bg-white rounded-lg shadow">
         <div class="flex items-center justify-between mb-4">
-            <div class="flex-1 flex items-center gap-2">
+            <div class="flex items-center flex-1 gap-2">
                 <div>
                     <h2 class="text-xl font-semibold">{{ panelTitle }}</h2>
                     <p v-if="modelValue.trim() && !isCreationMode" class="text-sm text-gray-600">{{ templateCount }} {{ detectInputFormat(modelValue) === "xml" ? (templateCount === 1 ? "template" : "templates") : templateCount === 1 ? "snippet" : "snippets" }} loaded</p>
