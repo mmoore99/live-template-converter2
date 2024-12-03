@@ -29,7 +29,7 @@ export interface SnippetInput {
 }
 
 export interface VSCodeSnippet {
-  [key: string]: {
+  {
     prefix: string;
     body: string[];
     description?: string;

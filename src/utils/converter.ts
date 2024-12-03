@@ -1,4 +1,4 @@
-import { Variable, WebStormTemplate } from "@/types";
+import { Variable, VSCodeSnippet, WebStormTemplate } from "@/types";
 
 const defaultLabels: Record<string, string> = {
     NAME: "name",
@@ -114,8 +114,8 @@ function processBody(template: WebStormTemplate): string[] {
     return value.split(/(?:&#10;|\n)/);
 }
 
-export function convertToSnippets(templates: WebStormTemplate[]): Record<string, any> {
-    const snippets: Record<string, any> = {};
+export function convertToSnippets(templates: WebStormTemplate[]): Record<string, VSCodeSnippet> {
+    const snippets: Record<string, VSCodeSnippet> = {};
 
     for (const template of templates) {
         snippets[template.name] = {

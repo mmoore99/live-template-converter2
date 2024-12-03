@@ -40,7 +40,7 @@ const formatSourceCode = (code: string): string[] => {
         .map(escapeSnippetCharacters);
 };
 
-export const generateSnippet = (input: SnippetInput): VSCodeSnippet => {
+export const generateSnippet = (input: SnippetInput): Record<string, VSCodeSnippet> => {
     const { name, prefix, description, scope, sourceCode } = input;
 
     if (!sourceCode.trim()) {
@@ -48,11 +48,11 @@ export const generateSnippet = (input: SnippetInput): VSCodeSnippet => {
     }
 
     return {
-        [name || 'untitled']: {
-            prefix: prefix || 'snippet',
+        [name || "untitled"]: {
+            prefix: prefix || "snippet",
             body: formatSourceCode(sourceCode),
-            description: description || '',
-            scope: scope || '',
+            description: description || "",
+            scope: scope || "",
         },
     };
 };

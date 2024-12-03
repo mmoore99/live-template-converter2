@@ -1,11 +1,4 @@
-export interface VSCodeSnippet {
-    [key: string]: {
-        prefix: string;
-        body: string[];
-        description?: string;
-        scope?: string;
-    };
-}
+import { VSCodeSnippet } from "@/types";
 
 interface TemplateSetOptions {
     includeTemplateSet: boolean;
