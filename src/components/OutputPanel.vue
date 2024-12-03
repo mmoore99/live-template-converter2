@@ -54,7 +54,14 @@
 
     // Watch for changes to snippets and update editor content
     watch(
-        () => [store.snippets, store.includeBrackets, localOutputType.value, store.sourceContent],
+        () => [
+            store.snippets,
+            store.includeBrackets,
+            localOutputType.value,
+            store.sourceContent,
+            store.includeTemplateSet,  // Add this
+            store.templateSetGroup     // Add this
+        ],
         () => {
             if (store.isCreationMode) {
                 if (localOutputType.value === "snippet") {
@@ -62,8 +69,8 @@
                     editorContent.value = output || "";
                 } else {
                     editorContent.value = convertToWebStormTemplate(store.snippets!, {
-                        includeTemplateSet: false,
-                        group: "Custom",
+                        includeTemplateSet: store.includeTemplateSet,  // Update this
+                        group: store.templateSetGroup,                 // Update this
                     });
                 }
             } else if (store.outputFormat === "json") {
@@ -71,7 +78,7 @@
                 editorContent.value = output || "";
             } else {
                 editorContent.value = convertToWebStormTemplate(store.snippets!, {
-                    includeTemplateSet: store.includeTemplateSet && !!store.filename,
+                    includeTemplateSet: store.includeTemplateSet,     // Update this
                     group: store.templateSetGroup,
                 });
             }
