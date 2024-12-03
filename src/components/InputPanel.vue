@@ -22,14 +22,16 @@
                         <Trash2 class="w-4 h-4" />
                     </button>
                 </div>
-                <button @click="showFileExplorer = true" class="h-9 px-3.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2">
+                <!-- <button @click="showFileExplorer = true" class="h-9 px-3.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2">
                     <FolderOpen class="w-4 h-4" />
                     Browse
-                </button>
+                </button> -->
+                <button @click="showFileExplorer = true" class="w-[90px] px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2"><FolderOpen class="w-4 h-4" />Browse</button>
 
                 <FileExplorer :is-open="showFileExplorer" @close="showFileExplorer = false" @select="handleFileSelect" />
+              </div>
             </div>
-        </div>
+            <div v-if="!store.isCreationMode" class="h-5"></div>
 
         <div v-if="store.isCreationMode" class="mb-4">
             <CreationModeInputs v-model="snippetTemplateData" @update:modelValue="updateSnippetTemplateData" />

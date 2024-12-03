@@ -1,6 +1,6 @@
 <template>
-  <label class="relative inline-flex items-center cursor-pointer gap-2">
-    <span class="text-sm font-medium text-gray-700">Include brackets</span>
+  <label class="relative inline-flex items-center gap-2 cursor-pointer">
+    <span class="text-sm font-medium text-gray-700">Enclose in braces</span>
     <input 
       type="checkbox"
       :checked="modelValue"

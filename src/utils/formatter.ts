@@ -39,23 +39,23 @@ export function formatSnippetOutput(snippets: Record<string, VSCodeSnippet>, inc
     return lines.slice(1, -1).join("\n").trim();
 }
 
-export function getFormattedContent(snippets: Record<string, VSCodeSnippet>, includeBrackets: boolean = false): string {
-    const formattedSnippets = { ...snippets };
+// export function getFormattedContent(snippets: Record<string, VSCodeSnippet>, includeBrackets: boolean = false): string {
+//     const formattedSnippets = { ...snippets };
 
-    // Process each snippet's body to preserve formatting
-    for (const key in formattedSnippets) {
-        if (Array.isArray(formattedSnippets[key].body)) {
-            formattedSnippets[key].body = preserveIndentation(formattedSnippets[key].body);
-        }
-    }
+//     // Process each snippet's body to preserve formatting
+//     for (const key in formattedSnippets) {
+//         if (Array.isArray(formattedSnippets[key].body)) {
+//             formattedSnippets[key].body = preserveIndentation(formattedSnippets[key].body);
+//         }
+//     }
 
-    const output = JSON.stringify(formattedSnippets, null, 2);
-    if (!output || output === "{}") return "";
+//     const output = JSON.stringify(formattedSnippets, null, 2);
+//     if (!output || output === "{}") return "";
 
-    if (includeBrackets) {
-        return output;
-    }
+//     if (includeBrackets) {
+//         return output;
+//     }
 
-    const lines = output.split("\n");
-    return lines.slice(1, -1).join("\n").trim();
-}
+//     const lines = output.split("\n");
+//     return lines.slice(1, -1).join("\n").trim();
+// }
