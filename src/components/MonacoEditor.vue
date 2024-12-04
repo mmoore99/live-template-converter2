@@ -13,6 +13,12 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import loader from '@monaco-editor/loader'
 import type * as monaco from 'monaco-editor'
 
+interface ContextMenuItem {
+  id: string;
+  label: string;
+  keybinding?: string;
+}
+
 const monacoInstance = ref<typeof monaco>()
 loader.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } })
 
@@ -213,15 +219,17 @@ function configureSnippetLanguage(monaco: typeof monacoInstance) {
 }
 
 const props = defineProps<{
-  modelValue: string
-  language: string
-  readOnly?: boolean
-  height?: string  // New prop for height
-}>()
+  modelValue: string;
+  language?: string;
+  readOnly?: boolean;
+  height?: string;
+  contextMenuItems?: ContextMenuItem[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-}>()
+  'update:modelValue': [value: string];
+  'contextMenuAction': [id: string];
+}>();
 
 const editorContainer = ref<HTMLElement>()
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
@@ -480,8 +488,33 @@ onMounted(async () => {
       showStatusBar: true,
     },
     wrappingIndent: 'indent',
-    renderWhitespace: 'selection'
+    renderWhitespace: 'selection',
+    contextmenu: true
   })
+
+    // Add context menu items after editor creation
+    if (props.contextMenuItems) {
+      editor.addAction({
+        id: 'custom-context-menu-separator',
+        label: '─────────────────',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        run: () => {} // No-op
+      });
+
+      props.contextMenuItems.forEach((item, index) => {
+        editor.addAction({
+          id: item.id,
+          label: item.label,
+          keybindings: item.keybinding ? [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC] : [], // Example keybinding
+          contextMenuGroupId: 'navigation',
+          contextMenuOrder: 2 + index,
+          run: () => {
+            emit('contextMenuAction', item.id);
+          }
+        });
+      });
+    }
 
     // Add specific format options for XML
     if (props.language === 'xml') {

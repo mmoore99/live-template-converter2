@@ -33,7 +33,14 @@
             </div>
         </div>
         <div class="">
-            <MonacoEditor v-model="editorContent" :language="language" :read-only="true" :height="store.isCreationMode ? 'calc(100vh - 275px)' : ''" />
+            <MonacoEditor 
+                v-model="editorContent" 
+                :language="language" 
+                :read-only="true" 
+                :height="store.isCreationMode ? 'calc(100vh - 275px)' : ''"
+                :context-menu-items="contextMenuItems"
+                @context-menu-action="handleContextMenuAction"
+            />
         </div>
     </div>
     <FileNameDialog :is-open="showFileNameDialog" :extension="downloadExtension" :default-filename="getDefaultFilename()" @confirm="handleDownloadConfirm" @close="showFileNameDialog = false" />
@@ -58,6 +65,32 @@
     const showFileNameDialog = ref(false);
     const downloadExtension = ref("");
     const localOutputType = ref(store.outputType);
+
+    const contextMenuItems = computed(() => [
+        {
+            id: 'copy',
+            label: 'Copy to Clipboard',
+            keybinding: 'Ctrl+C'
+        },
+        {
+            id: 'download',
+            label: 'Download File',
+            keybinding: 'Ctrl+S'
+        }
+    ]);
+
+    function handleContextMenuAction(id: string) {
+        switch (id) {
+            case 'copy':
+                copyToClipboard();
+                break;
+            case 'download':
+                if (!store.isCreationMode) {
+                    handleDownload();
+                }
+                break;
+        }
+    }
 
     // Watch for changes to snippets and update editor content
     watch(
