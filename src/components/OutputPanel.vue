@@ -1,33 +1,39 @@
 <template>
     <div class="p-4 bg-white rounded-lg shadow">
-        <div :class="['flex justify-between', store.isCreationMode ? 'items-start' : 'items-center']">
-            <div>
-                <h2 class="text-xl font-semibold">Generated Output</h2>
-                <div v-if="store.isCreationMode" class="mt-1 space-y-1">
-                    <label class="flex items-center">
-                        <input type="radio" v-model="localOutputType" value="snippet" class="w-4 h-4 text-blue-600" />
-                        <span class="ml-2 text-sm text-gray-700">VSCode Snippet</span>
-                    </label>
-                    <label class="flex items-center">
-                        <input type="radio" v-model="localOutputType" value="template" class="w-4 h-4 text-blue-600" />
-                        <span class="ml-2 text-sm text-gray-700">Live Template</span>
-                    </label>
+        <div :class="store.isCreationMode ? 'h-[135px]' : 'h-[84px]'">
+            <div :class="['flex justify-between', store.isCreationMode ? 'items-start' : 'items-center']">
+                <div>
+                    <h2 class="text-xl font-semibold">Generated Output</h2>
+                    <div v-if="store.isCreationMode" class="mt-1 space-y-1">
+                        <label class="flex items-center">
+                            <input type="radio" v-model="localOutputType" value="snippet" class="w-4 h-4 text-blue-600" />
+                            <span class="ml-2 text-sm text-gray-700">VSCode Snippet</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" v-model="localOutputType" value="template" class="w-4 h-4 text-blue-600" />
+                            <span class="ml-2 text-sm text-gray-700">Live Template</span>
+                        </label>
+                    </div>
+                    <p v-if="hasValidContent" class="text-sm text-gray-600">{{ store.templateCount }} {{ language === "xml" ? (store.templateCount === 1 ? "live template" : "live templates") : store.templateCount === 1 ? "snippet" : "snippets" }} generated</p>
                 </div>
-                <p v-if="hasValidContent" class="text-sm text-gray-600">{{ store.templateCount }} {{ language === "xml" ? (store.templateCount === 1 ? "live template" : "live templates") : store.templateCount === 1 ? "snippet" : "snippets" }} generated</p>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div class="space-x-2">
-                    <button @click="copyToClipboard" class="w-[90px] px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">Copy</button>
-                    <button v-if="!store.isCreationMode" @click="handleDownload" class="w-[90px] px-3.5 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700">Download</button>
+                <div class="flex gap-[10px]">
+                    <button @click="copyToClipboard" class="w-[120px] px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center justify-center gap-2">
+                        <ClipboardCopy class="w-4 h-4" />
+                        <span>Copy</span>
+                    </button>
+                    <button v-if="!store.isCreationMode" @click="handleDownload" class="w-[120px] px-3.5 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700 flex items-center justify-center gap-2">
+                        <Download class="w-4 h-4" />
+                        <span>Download</span>
+                    </button>
                 </div>
             </div>
-        </div>
-        <div class="flex items-center justify-center" :class="[hasValidContent ? 'h-[35px]' : 'h-[44px]']">
-            <TemplateSetControls v-if="language === 'xml' && hasValidContent" v-model="store.includeTemplateSet" v-model:groupValue="store.templateSetGroup" />
-            <OutputToggle v-if="language === 'vscode-snippet' && hasValidContent" v-model="store.includeBrackets" />
+            <div class="flex items-center justify-center" :class="[hasValidContent ? 'h-[35px]' : 'h-[44px]']">
+                <TemplateSetControls v-if="language === 'xml' && hasValidContent" v-model="store.includeTemplateSet" v-model:groupValue="store.templateSetGroup" />
+                <OutputToggle v-if="language === 'vscode-snippet' && hasValidContent" v-model="store.includeBrackets" />
+            </div>
         </div>
         <div class="">
-            <MonacoEditor v-model="editorContent" :language="language" :read-only="true" :height="store.isCreationMode ? 'calc(100vh - 240px)' : ''" />
+            <MonacoEditor v-model="editorContent" :language="language" :read-only="true" :height="store.isCreationMode ? 'calc(100vh - 275px)' : ''" />
         </div>
     </div>
     <FileNameDialog :is-open="showFileNameDialog" :extension="downloadExtension" :default-filename="getDefaultFilename()" @confirm="handleDownloadConfirm" @close="showFileNameDialog = false" />
@@ -43,6 +49,7 @@
     import FileNameDialog from "./FileNameDialog.vue";
     import { formatSnippetOutput } from "@/utils/formatter";
     import { convertToWebStormTemplate } from "@/utils/vscodeToWebstorm";
+    import { ClipboardCopy, Download } from "lucide-vue-next";
 
     const store = useAppStore();
     const toast = useToast();
@@ -59,8 +66,8 @@
             store.includeBrackets,
             localOutputType.value,
             store.sourceContent,
-            store.includeTemplateSet,  // Add this
-            store.templateSetGroup     // Add this
+            store.includeTemplateSet, // Add this
+            store.templateSetGroup, // Add this
         ],
         () => {
             if (store.isCreationMode) {
@@ -69,8 +76,8 @@
                     editorContent.value = output || "";
                 } else {
                     editorContent.value = convertToWebStormTemplate(store.snippets!, {
-                        includeTemplateSet: store.includeTemplateSet,  // Update this
-                        group: store.templateSetGroup,                 // Update this
+                        includeTemplateSet: store.includeTemplateSet, // Update this
+                        group: store.templateSetGroup, // Update this
                     });
                 }
             } else if (store.outputFormat === "json") {
@@ -78,7 +85,7 @@
                 editorContent.value = output || "";
             } else {
                 editorContent.value = convertToWebStormTemplate(store.snippets!, {
-                    includeTemplateSet: store.includeTemplateSet,     // Update this
+                    includeTemplateSet: store.includeTemplateSet, // Update this
                     group: store.templateSetGroup,
                 });
             }

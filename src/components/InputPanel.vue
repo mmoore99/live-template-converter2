@@ -1,40 +1,39 @@
 <template>
     <div class="p-4 bg-white rounded-lg shadow">
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center flex-1 gap-2">
-                <div>
-                    <h2 class="text-xl font-semibold">{{ panelTitle }}</h2>
-                    <p v-if="store.sourceContent.trim() && !store.isCreationMode" class="text-sm text-gray-600">
-                        {{ store.templateCount }} {{ detectInputFormat(store.sourceContent) === "xml" ? (store.templateCount === 1 ? "template" : "templates") : store.templateCount === 1 ? "snippet" : "snippets" }} loaded
-                    </p>
-                </div>
-                <div class="relative flex-1 ml-2">
-                    <input
-                        ref="fileInput"
-                        type="text"
-                        :value="store.inputFilename"
-                        readonly
-                        placeholder="Click here to open explorer or click browse to drag and drop"
-                        @click="openFileDialog"
-                        class="w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-[5px] pr-8 cursor-pointer bg-gray-50"
-                    />
-                    <button v-if="store.inputFilename" @click="clearFilename" class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600">
-                        <Trash2 class="w-4 h-4" />
-                    </button>
-                </div>
-                <!-- <button @click="showFileExplorer = true" class="h-9 px-3.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2">
+      <div :class="[store.isCreationMode ? '' : 'h-[84px]']">
+          <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center flex-1 gap-2">
+                  <div>
+                      <h2 class="text-xl font-semibold">{{ panelTitle }}</h2>
+                      <p v-if="store.sourceContent.trim() && !store.isCreationMode" class="text-sm text-gray-600">
+                          {{ store.templateCount }} {{ detectInputFormat(store.sourceContent) === "xml" ? (store.templateCount === 1 ? "template" : "templates") : store.templateCount === 1 ? "snippet" : "snippets" }} loaded
+                      </p>
+                  </div>
+                  <div class="relative flex-1 ml-2">
+                      <input
+                          ref="fileInput"
+                          type="text"
+                          :value="store.inputFilename"
+                          readonly
+                          placeholder="Click here to open explorer or click browse to drag and drop"
+                          @click="openFileDialog"
+                          class="w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-[5px] pr-8 cursor-pointer bg-gray-50"
+                      />
+                      <button v-if="store.inputFilename" @click="clearFilename" class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600">
+                          <Trash2 class="w-4 h-4" />
+                      </button>
+                  </div>
+                  <button @click="showFileExplorer = true" class="w-[120px] px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center justify-center gap-2">
                     <FolderOpen class="w-4 h-4" />
-                    Browse
-                </button> -->
-                <button @click="showFileExplorer = true" class="w-[90px] px-3.5 py-1.5 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 flex items-center gap-2"><FolderOpen class="w-4 h-4" />Browse</button>
-
-                <FileExplorer :is-open="showFileExplorer" @close="showFileExplorer = false" @select="handleFileSelect" />
+                    <span>Browse</span>
+                </button>
+                  <FileExplorer :is-open="showFileExplorer" @close="showFileExplorer = false" @select="handleFileSelect" />
+                </div>
               </div>
-            </div>
-            <div v-if="!store.isCreationMode" class="h-5"></div>
-
-        <div v-if="store.isCreationMode" class="mb-4">
-            <CreationModeInputs v-model="snippetTemplateData" @update:modelValue="updateSnippetTemplateData" />
+              <div v-if="!store.isCreationMode" class="h-5"></div>
+          <div v-if="store.isCreationMode" class="mb-4">
+              <CreationModeInputs v-model="snippetTemplateData" @update:modelValue="updateSnippetTemplateData" />
+          </div>
         </div>
 
         <div class="editor-wrapper">
