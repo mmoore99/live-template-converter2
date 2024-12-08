@@ -224,6 +224,7 @@ const props = defineProps<{
   readOnly?: boolean;
   height?: string;
   contextMenuItems?: ContextMenuItem[];
+  disableValidation?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -490,6 +491,24 @@ onMounted(async () => {
     wrappingIndent: 'indent',
     renderWhitespace: 'selection',
     contextmenu: true,
+    renderValidationDecorations: props.disableValidation ? 'off' : 'on',
+    semanticValidation: !props.disableValidation,
+    syntaxValidation: !props.disableValidation,
+    codeActionsOnSaveTimeout: 0,
+    // Disable all other validation features when in creation mode
+    ...(props.disableValidation ? {
+        quickSuggestions: false,
+        parameterHints: {
+            enabled: false
+        },
+        suggestOnTriggerCharacters: false,
+        acceptSuggestionOnEnter: 'off',
+        tabCompletion: 'off',
+        wordBasedSuggestions: false,
+        semanticHighlighting: {
+            enabled: false
+        },
+    } : {}),
     actions: [
         {
             id: 'insertTabstop',
@@ -593,6 +612,15 @@ onMounted(async () => {
     editor.addCommand(monacoInstance.value.KeyMod.CtrlCmd | monacoInstance.value.KeyCode.KeyF, () => {
       editor?.getAction('editor.action.formatDocument')?.run()
     })
+
+    // Also update TypeScript configuration if needed
+    if (props.disableValidation && props.language === 'typescript') {
+      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: true,
+          noSyntaxValidation: true,
+          noSuggestionDiagnostics: true
+      });
+    }
   } catch (error) {
     console.error('Failed to initialize Monaco Editor:', error)
   }

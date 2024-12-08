@@ -39,7 +39,15 @@
         <div class="editor-wrapper">
             <div class="relative isolate">
                 <button @click="clearAll" class="editor-clear-btn">Clear</button>
-                <MonacoEditor v-model="editorContent" :language="store.isCreationMode ? 'typescript' : inputLanguage" @update:modelValue="updateContent" :height="store.isCreationMode ? 'calc(100vh - 350px)' : ''" :context-menu-items="editorContextMenuItems" @context-menu-action="handleEditorContextMenu" />
+                <MonacoEditor 
+                    v-model="editorContent" 
+                    :language="store.isCreationMode ? 'typescript' : inputLanguage" 
+                    @update:modelValue="updateContent" 
+                    :height="store.isCreationMode ? 'calc(100vh - 350px)' : ''" 
+                    :context-menu-items="editorContextMenuItems" 
+                    @context-menu-action="handleEditorContextMenu"
+                    :disable-validation="store.isCreationMode"
+                />
             </div>
         </div>
     </div>
