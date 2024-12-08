@@ -39,7 +39,7 @@
         <div class="editor-wrapper">
             <div class="relative isolate">
                 <button @click="clearAll" class="editor-clear-btn">Clear</button>
-                <MonacoEditor v-model="editorContent" :language="store.isCreationMode ? 'typescript' : inputLanguage" @update:modelValue="updateContent" :height="store.isCreationMode ? 'calc(100vh - 350px)' : ''" />
+                <MonacoEditor v-model="editorContent" :language="store.isCreationMode ? 'typescript' : inputLanguage" @update:modelValue="updateContent" :height="store.isCreationMode ? 'calc(100vh - 350px)' : ''" :context-menu-items="editorContextMenuItems" @context-menu-action="handleEditorContextMenu" />
             </div>
         </div>
     </div>
@@ -70,6 +70,9 @@
         scope: "",
         description: "",
     });
+
+    // Add monacoInstance at the top with other state variables
+    const monacoInstance = ref<any>(null);
 
     // Watch for store content changes
     watch(
@@ -215,6 +218,157 @@
         store.setInputFilename(filename);
         updateContent(content);
     }
+
+    interface EditorSelection {
+        startLineNumber: number;
+        startColumn: number;
+        endLineNumber: number;
+        endColumn: number;
+    }
+
+    // Add these utility functions
+    function getOffsetFromPosition(content: string, lineNumber: number, column: number): number {
+        const lines = content.split('\n');
+        let offset = 0;
+        
+        // Add up lengths of all previous lines
+        for (let i = 0; i < lineNumber - 1; i++) {
+            offset += lines[i].length + 1; // +1 for the newline character
+        }
+        
+        // Add the columns in the current line
+        offset += column - 1;
+        
+        return offset;
+    }
+
+    function getSelectedText(content: string, selection: EditorSelection): string {
+        const startOffset = getOffsetFromPosition(content, selection.startLineNumber, selection.startColumn);
+        const endOffset = getOffsetFromPosition(content, selection.endLineNumber, selection.endColumn);
+        
+        return content.substring(startOffset, endOffset);
+    }
+
+    // Example handler for context menu action that includes selection
+    function handleEditorAction(actionData: { 
+        id: string; 
+        selection?: EditorSelection;
+    }) {
+        if (actionData.selection) {
+            const selectedText = getSelectedText(editorContent.value, actionData.selection);
+            // Now you can use the selected text
+            console.log('Selected text:', selectedText);
+        }
+    }
+
+    // Update findNextTabstopNumber to include both standard and placeholder/choice formats
+    function findNextTabstopNumber(content: string): number {
+        const regex = /\$(?:\{(\d+)[:|]|\{?(\d+)\}?)/g;
+        let match;
+        let highest = 0;
+        
+        while ((match = regex.exec(content)) !== null) {
+            const num = parseInt(match[1] || match[2], 10);
+            if (num > highest) highest = num;
+        }
+        
+        return highest + 1;
+    }
+
+    // Update insertSnippetText to use the stored monacoInstance
+    function insertSnippetText(editor: any, text: string) {
+        const selection = editor.getSelection();
+        const position = editor.getPosition();
+        
+        // Create a range either from selection or current cursor position
+        const range = selection && !selection.isEmpty() 
+            ? selection 
+            : new monacoInstance.value.Range(
+                position.lineNumber,
+                position.column,
+                position.lineNumber,
+                position.column
+            );
+
+        // Execute the edit
+        editor.executeEdits('snippet', [{
+            range: range,
+            text: text,
+            forceMoveMarkers: true
+        }]);
+    }
+
+    // Add new computed property for context menu items
+    const editorContextMenuItems = computed(() => [
+        {
+            id: 'insertTabstop',
+            label: 'Insert Tabstop',
+            keybinding: 'Alt+1'
+        },
+        {
+            id: 'insertFinalTabstop',
+            label: 'Insert Final Tabstop',
+            keybinding: 'Alt+0'
+        },
+        {
+            id: 'insertPlaceholder',
+            label: 'Insert Placeholder',
+            keybinding: 'Alt+2'
+        },
+        {
+            id: 'insertChoice',
+            label: 'Insert Choice Placeholder',
+            keybinding: 'Alt+3'
+        }
+    ]);
+
+    // Update handleEditorContextMenu to properly handle cursor positioning
+    function handleEditorContextMenu(action: string, editor: any) {
+        if (!monacoInstance.value) {
+            monacoInstance.value = (window as any).monaco;
+        }
+        
+        const nextNum = findNextTabstopNumber(editorContent.value);
+        const selection = editor.getSelection();
+        const startPosition = selection.isEmpty() ? editor.getPosition() : selection.getStartPosition();
+        
+        switch (action) {
+            case 'insertTabstop':
+                insertSnippetText(editor, `$${nextNum}`);
+                break;
+                
+            case 'insertFinalTabstop':
+                insertSnippetText(editor, '$0');
+                break;
+                
+            case 'insertPlaceholder': {
+                const text = `\${${nextNum}:}`;
+                insertSnippetText(editor, text);
+                // Position cursor between : and }
+                const newColumn = startPosition.column + text.indexOf(':') + 1;
+                editor.setPosition({
+                    lineNumber: startPosition.lineNumber,
+                    column: newColumn
+                });
+                editor.focus();
+                break;
+            }
+                
+            case 'insertChoice': {
+                const text = `\${${nextNum}||}`;
+                insertSnippetText(editor, text);
+                // Position cursor between the pipes
+                const newColumn = startPosition.column + text.indexOf('|') + 1;
+                editor.setPosition({
+                    lineNumber: startPosition.lineNumber,
+                    column: newColumn
+                });
+                editor.focus();
+                break;
+            }
+        }
+    }
+
 </script>
 
 <style scoped>

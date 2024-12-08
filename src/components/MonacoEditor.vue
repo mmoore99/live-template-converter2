@@ -489,28 +489,68 @@ onMounted(async () => {
     },
     wrappingIndent: 'indent',
     renderWhitespace: 'selection',
-    contextmenu: true
-  })
+    contextmenu: true,
+    actions: [
+        {
+            id: 'insertTabstop',
+            label: 'Insert Tabstop',
+            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit1],
+            run: (editor) => {
+                emit('contextMenuAction', 'insertTabstop', editor);
+                return null;
+            }
+        },
+        {
+            id: 'insertFinalTabstop',
+            label: 'Insert Final Tabstop',
+            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit0],
+            run: (editor) => {
+                emit('contextMenuAction', 'insertFinalTabstop', editor);
+                return null;
+            }
+        },
+        {
+            id: 'insertPlaceholder',
+            label: 'Insert Placeholder',
+            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit2],
+            run: (editor) => {
+                emit('contextMenuAction', 'insertPlaceholder', editor);
+                return null;
+            }
+        },
+        {
+            id: 'insertChoice',
+            label: 'Insert Choice Placeholder',
+            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit3],
+            run: (editor) => {
+                emit('contextMenuAction', 'insertChoice', editor);
+                return null;
+            }
+        }
+    ]
+})
 
     // Add context menu items after editor creation
     if (props.contextMenuItems) {
+      // Add submenu separator first
       editor.addAction({
-        id: 'custom-context-menu-separator',
-        label: '─────────────────',
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.5,
+        id: 'snippet-menu-separator',
+        label: '────── Snippet Tools ──────',
+        contextMenuGroupId: '9_cutcopypaste', // Place after default items
+        contextMenuOrder: 0,
         run: () => {} // No-op
       });
 
+      // Add custom items in their own group
       props.contextMenuItems.forEach((item, index) => {
         editor.addAction({
           id: item.id,
-          label: item.label,
-          keybindings: item.keybinding ? [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC] : [], // Example keybinding
-          contextMenuGroupId: 'navigation',
-          contextMenuOrder: 2 + index,
-          run: () => {
-            emit('contextMenuAction', item.id);
+          label: `${item.label} ${item.keybinding ? `(${item.keybinding})` : ''}`,
+          keybindings: item.keybinding ? [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC] : [],
+          contextMenuGroupId: 'snippetTools', // Custom group for snippet tools
+          contextMenuOrder: index + 1,
+          run: (editor) => {
+            emit('contextMenuAction', item.id, editor);
           }
         });
       });
