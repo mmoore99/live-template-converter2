@@ -92,6 +92,10 @@
         { immediate: true }
     );
 
+    watch(editorContent, (newValue) => {
+        updateContent(newValue);
+    });
+
     // Watch for mode changes to reset the editor content
     watch(
         () => store.isCreationMode,
