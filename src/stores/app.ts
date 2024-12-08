@@ -43,6 +43,10 @@ export const useAppStore = defineStore("app", () => {
         inputFilename.value = name;
     }
 
+    function setCreationMode(value: boolean) {
+        isCreationMode.value = value;
+    }
+
     function toggleCreationMode() {
         isCreationMode.value = !isCreationMode.value;
         clearContent();
@@ -97,6 +101,7 @@ export const useAppStore = defineStore("app", () => {
         clearContent,
         setFilename,
         setInputFilename,
+        setCreationMode,
         toggleCreationMode,
         setOutputFormat,
         setOutputType,
