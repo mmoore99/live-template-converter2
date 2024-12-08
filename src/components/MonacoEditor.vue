@@ -22,7 +22,7 @@ interface ContextMenuItem {
 const monacoInstance = ref<typeof monaco>()
 loader.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } })
 
-function configureTypeScript(monaco: typeof monacoInstance) {
+function configureTypeScript(monaco: typeof monacoInstance, disableValidation = false) {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.Latest,
     allowNonTsExtensions: true,
@@ -34,9 +34,63 @@ function configureTypeScript(monaco: typeof monacoInstance) {
     reactNamespace: 'React',
     allowJs: true,
     typeRoots: ['node_modules/@types'],
-    strict: true,
+    strict: !disableValidation,  // Turn off strict checking if validation is disabled
     lib: ['es2020', 'dom']
-  })
+  });
+
+  if (disableValidation) {
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true,
+      noSyntaxValidation: true,
+      noSuggestionDiagnostics: true,
+      diagnosticCodesToIgnore: [1005, 1006, 1010, 1011, 1109, 1128, 1161, 1308, 1378]  // Common TypeScript errors
+    });
+  }
+}
+
+// Add this function after the configureTypeScript function
+function updateTypeScriptValidation(monaco: typeof monacoInstance, disable: boolean) {
+  // Turn off all TypeScript validations
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: disable,
+    noSyntaxValidation: disable,
+    noSuggestionDiagnostics: disable,
+    diagnosticCodesToIgnore: disable ? [1005, 1006, 1010, 1011, 1109, 1128, 1161, 1308, 1378] : []
+  });
+
+  // Update the editor model if it exists
+  if (editor) {
+    const model = editor.getModel();
+    if (model) {
+      model.updateOptions({
+        semanticHighlighting: { enabled: !disable },
+        formatOnType: !disable,
+        formatOnPaste: !disable
+      });
+    }
+
+    // Update editor options
+    editor.updateOptions({
+      renderValidationDecorations: disable ? 'off' : 'on',
+      semanticValidation: !disable,
+      syntaxValidation: !disable,
+      quickSuggestions: !disable,
+      parameterHints: { enabled: !disable },
+      suggestOnTriggerCharacters: !disable,
+      acceptSuggestionOnEnter: disable ? 'off' : 'on',
+      tabCompletion: disable ? 'off' : 'on',
+      wordBasedSuggestions: !disable,
+      lightbulb: { enabled: !disable },
+      signatureHelp: { enabled: !disable },
+      hover: { enabled: !disable },
+      colorDecorators: !disable,
+      gotoLocation: { enabled: !disable },
+      codeLens: !disable,
+      snippetSuggestions: disable ? 'none' : 'inline',
+      occurrencesHighlight: !disable,
+      inlayHints: { enabled: !disable }
+    });
+  }
 }
 
 // Add basic TypeScript/JavaScript types
@@ -242,7 +296,7 @@ onMounted(async () => {
     monacoInstance.value = await loader.init()
     const monaco = monacoInstance.value
 
-    configureTypeScript(monaco)
+    configureTypeScript(monaco, props.disableValidation)  // Pass the disableValidation prop
     addTypeScriptTypes(monaco)
     registerXmlLanguage(monaco)
     registerSnippetLanguage(monaco)
@@ -495,59 +549,28 @@ onMounted(async () => {
     semanticValidation: !props.disableValidation,
     syntaxValidation: !props.disableValidation,
     codeActionsOnSaveTimeout: 0,
-    // Disable all other validation features when in creation mode
+    // Enhanced validation disabling when in creation mode
     ...(props.disableValidation ? {
-        quickSuggestions: false,
-        parameterHints: {
-            enabled: false
-        },
-        suggestOnTriggerCharacters: false,
-        acceptSuggestionOnEnter: 'off',
-        tabCompletion: 'off',
-        wordBasedSuggestions: false,
-        semanticHighlighting: {
-            enabled: false
-        },
-    } : {}),
-    actions: [
-        {
-            id: 'insertTabstop',
-            label: 'Insert Tabstop',
-            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit1],
-            run: (editor) => {
-                emit('contextMenuAction', 'insertTabstop', editor);
-                return null;
-            }
-        },
-        {
-            id: 'insertFinalTabstop',
-            label: 'Insert Final Tabstop',
-            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit0],
-            run: (editor) => {
-                emit('contextMenuAction', 'insertFinalTabstop', editor);
-                return null;
-            }
-        },
-        {
-            id: 'insertPlaceholder',
-            label: 'Insert Placeholder',
-            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit2],
-            run: (editor) => {
-                emit('contextMenuAction', 'insertPlaceholder', editor);
-                return null;
-            }
-        },
-        {
-            id: 'insertChoice',
-            label: 'Insert Choice Placeholder',
-            keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Digit3],
-            run: (editor) => {
-                emit('contextMenuAction', 'insertChoice', editor);
-                return null;
-            }
-        }
-    ]
-})
+      quickSuggestions: false,
+      parameterHints: { enabled: false },
+      suggestOnTriggerCharacters: false,
+      acceptSuggestionOnEnter: 'off',
+      tabCompletion: 'off',
+      wordBasedSuggestions: false,
+      semanticHighlighting: { enabled: false },
+      lightbulb: { enabled: false },
+      signatureHelp: { enabled: false },
+      hover: { enabled: false },
+      colorDecorators: false,
+      gotoLocation: { enabled: false },
+      codeLens: false,
+      snippetSuggestions: 'none',
+      formatOnType: false,
+      linkedEditing: false,
+      occurrencesHighlight: false,
+      inlayHints: { enabled: false }
+    } : {})
+  })
 
     // Add context menu items after editor creation
     if (props.contextMenuItems) {
@@ -650,6 +673,13 @@ watch(() => props.language, (newValue) => {
     }
   }
 })
+
+// Add this watch after the other watch statements
+watch(() => props.disableValidation, (newValue) => {
+  if (monacoInstance.value) {
+    updateTypeScriptValidation(monacoInstance.value, newValue);
+  }
+});
 
 onBeforeUnmount(() => {
   if (editor) {
