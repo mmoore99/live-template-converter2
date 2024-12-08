@@ -335,7 +335,25 @@ onMounted(async () => {
         { token: 'delimiter.bracket', foreground: 'FFFFFF' },
         { token: 'delimiter.array', foreground: 'FFFFFF' },
         { token: 'delimiter.comma', foreground: 'FFFFFF' },
-        { token: 'comment', foreground: '6A9955', fontStyle: 'italic' }
+        { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+        { token: 'identifier.ts', foreground: '9CDCFE' }, // Variables
+        { token: 'function.ts', foreground: 'DCDCAA' }, // Function names
+        { token: 'keyword.ts', foreground: 'C586C0' }, // Keywords
+        { token: 'variable.ts', foreground: '9CDCFE' }, // Variables
+        { token: 'function.declaration.ts', foreground: 'DCDCAA' }, // Function declarations
+        { token: 'keyword.control.ts', foreground: 'C586C0' }, // Control keywords
+        { token: 'keyword.operator.ts', foreground: 'C586C0' }, // Operators
+        { token: 'keyword.other.ts', foreground: 'C586C0' }, // Other keywords
+        { token: 'variable.parameter.ts', foreground: '4EC9B0' }, // Parameters
+        { token: 'function.call.ts', foreground: 'DCDCAA' }, // Function calls
+        { token: 'variable.readwrite.ts', foreground: '9CDCFE' }, // Read/write variables
+        { token: 'variable.readonly.ts', foreground: '4EC9B0' }, // Read-only variables
+        // Assign colors to the new token types
+        { token: 'function', foreground: 'DCDCAA' },   // Functions in yellow
+        { token: 'variable', foreground: '9CDCFE' },   // Variables in blue
+        { token: 'type', foreground: '4EC9B0' },       // Types in green
+        { token: 'keyword', foreground: 'C586C0' },    // Keywords in purple
+        { token: 'identifier', foreground: '9CDCFE' }, // Identifiers in blue
       ],
       colors: {
         'editor.background': '#000000',
@@ -475,102 +493,100 @@ onMounted(async () => {
     });
 
     editor = monaco.editor.create(editorContainer.value, {
-    value: props.modelValue.trim(), // Trim the initial value
-    language: props.language === 'typescript' ? 'typescript' : 
-             props.language === 'vscode-snippet' ? 'vscode-snippet' : 
-             props.language,
-    theme: 'snippetTheme',
-    automaticLayout: true,
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    readOnly: props.readOnly,
-    fontSize: 14,
-    tabSize: 2,
-    wordWrap: 'on', // Change from 'off' to 'on'
-    lineNumbers: 'on',
-    renderWhitespace: 'none',
-    bracketPairColorization: {
-      enabled: true,
-    },
-    semanticHighlighting: {
-      enabled: true
-    },
-    autoClosingBrackets: 'always',
-    autoClosingQuotes: 'always',
-    autoIndent: 'advanced',
-    autoClosingPairs: [
-      { open: '{', close: '}' },
-      { open: '[', close: ']' },
-      { open: '(', close: ')' },
-      { open: '"', close: '"' },
-      { open: "'", close: "'" },
-      { open: '<', close: '>' }
-    ],
-    scrollbar: {
-      vertical: 'visible',
-      horizontal: 'visible'
-    },
-    formatOnPaste: true,
-    formatOnType: props.language !== 'xml', // Disable for XML to prevent formatting issues
-    suggest: {
-      showWords: false,
-      showSnippets: true,
-      showUsers: false,
-      showMethods: false,
-      showFunctions: false,
-      showConstructors: false,
-      showFields: false,
-      showVariables: false,
-      showClasses: false,
-      showStructs: false,
-      showInterfaces: false,
-      showModules: false,
-      showProperties: false,
-      showEvents: false,
-      showOperators: false,
-      showUnits: false,
-      showValues: false,
-      showConstants: false,
-      showEnums: false,
-      showEnumMembers: false,
-      showKeywords: false,
-      showTypeParameters: false,
-      showColors: false,
-      showFiles: false,
-      showReferences: false,
-      showFolders: false,
-      showInlineDetails: true,
-      showStatusBar: true,
-    },
-    wrappingIndent: 'indent',
-    renderWhitespace: 'selection',
-    contextmenu: true,
-    renderValidationDecorations: props.disableValidation ? 'off' : 'on',
-    semanticValidation: !props.disableValidation,
-    syntaxValidation: !props.disableValidation,
-    codeActionsOnSaveTimeout: 0,
-    // Enhanced validation disabling when in creation mode
-    ...(props.disableValidation ? {
-      quickSuggestions: false,
-      parameterHints: { enabled: false },
-      suggestOnTriggerCharacters: false,
-      acceptSuggestionOnEnter: 'off',
-      tabCompletion: 'off',
-      wordBasedSuggestions: false,
-      semanticHighlighting: { enabled: false },
-      lightbulb: { enabled: false },
-      signatureHelp: { enabled: false },
-      hover: { enabled: false },
-      colorDecorators: false,
-      gotoLocation: { enabled: false },
-      codeLens: false,
-      snippetSuggestions: 'none',
-      formatOnType: false,
-      linkedEditing: false,
-      occurrencesHighlight: false,
-      inlayHints: { enabled: false }
-    } : {})
-  })
+      value: props.modelValue.trim(), // Trim the initial value
+      language: props.language || 'plaintext',
+      theme: 'snippetTheme',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      readOnly: props.readOnly,
+      fontSize: 14,
+      tabSize: 2,
+      wordWrap: 'on', // Change from 'off' to 'on'
+      lineNumbers: 'on',
+      renderWhitespace: 'none',
+      bracketPairColorization: {
+        enabled: true,
+      },
+      semanticHighlighting: {
+        enabled: true
+      },
+      autoClosingBrackets: 'always',
+      autoClosingQuotes: 'always',
+      autoIndent: 'advanced',
+      autoClosingPairs: [
+        { open: '{', close: '}' },
+        { open: '[', close: ']' },
+        { open: '(', close: ')' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+        { open: '<', close: '>' }
+      ],
+      scrollbar: {
+        vertical: 'visible',
+        horizontal: 'visible'
+      },
+      formatOnPaste: true,
+      formatOnType: props.language !== 'xml', // Disable for XML to prevent formatting issues
+      suggest: {
+        showWords: false,
+        showSnippets: true,
+        showUsers: false,
+        showMethods: false,
+        showFunctions: false,
+        showConstructors: false,
+        showFields: false,
+        showVariables: false,
+        showClasses: false,
+        showStructs: false,
+        showInterfaces: false,
+        showModules: false,
+        showProperties: false,
+        showEvents: false,
+        showOperators: false,
+        showUnits: false,
+        showValues: false,
+        showConstants: false,
+        showEnums: false,
+        showEnumMembers: false,
+        showKeywords: false,
+        showTypeParameters: false,
+        showColors: false,
+        showFiles: false,
+        showReferences: false,
+        showFolders: false,
+        showInlineDetails: true,
+        showStatusBar: true,
+      },
+      wrappingIndent: 'indent',
+      renderWhitespace: 'selection',
+      contextmenu: true,
+      renderValidationDecorations: props.disableValidation ? 'off' : 'on',
+      semanticValidation: !props.disableValidation,
+      syntaxValidation: !props.disableValidation,
+      codeActionsOnSaveTimeout: 0,
+      // Enhanced validation disabling when in creation mode
+      ...(props.disableValidation ? {
+        quickSuggestions: false,
+        parameterHints: { enabled: false },
+        suggestOnTriggerCharacters: false,
+        acceptSuggestionOnEnter: 'off',
+        tabCompletion: 'off',
+        wordBasedSuggestions: false,
+        semanticHighlighting: { enabled: false },
+        lightbulb: { enabled: false },
+        signatureHelp: { enabled: false },
+        hover: { enabled: false },
+        colorDecorators: false,
+        gotoLocation: { enabled: false },
+        codeLens: false,
+        snippetSuggestions: 'none',
+        formatOnType: false,
+        linkedEditing: false,
+        occurrencesHighlight: false,
+        inlayHints: { enabled: false }
+      } : {})
+    })
 
     // Add context menu items after editor creation
     if (props.contextMenuItems) {

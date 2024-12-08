@@ -41,8 +41,7 @@
                 <button @click="clearAll" class="editor-clear-btn">Clear</button>
                 <MonacoEditor 
                     v-model="editorContent" 
-                    :language="store.isCreationMode ? 'typescript' : inputLanguage" 
-                    @update:modelValue="updateContent" 
+                    :language="inputLanguage"
                     :height="store.isCreationMode ? 'calc(100vh - 350px)' : ''" 
                     :context-menu-items="editorContextMenuItems" 
                     @context-menu-action="handleEditorContextMenu"
