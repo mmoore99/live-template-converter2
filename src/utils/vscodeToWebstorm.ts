@@ -7,9 +7,11 @@ interface TemplateSetOptions {
 }
 
 export function convertToWebStormTemplate(
-    snippets: Record<string, VSCodeSnippet>,
+    snippets: Record<string, VSCodeSnippet> | null,
     options: TemplateSetOptions = { includeTemplateSet: true, group: "Custom", sort: false }
 ): string {
+    if (!snippets) return "";
+
     // Helper function to convert VSCode placeholders to WebStorm variables
     function convertPlaceholders(text: string): string {
         return text.replace(/\$\{(\d+)\|([^}]+)\}|\$\{(\d+):([^}]+)\}|\$\{(\d+)\}|\$(\d+)/g, (match, p1, p2, p3, p4, p5, p6) => {

@@ -18,7 +18,9 @@ function preserveIndentation(lines: string[]): string[] {
     });
 }
 
-export function formatSnippetOutput(snippets: Record<string, VSCodeSnippet>, includeBrackets: boolean, sort: boolean = false): string {
+export function formatSnippetOutput(snippets: Record<string, VSCodeSnippet> | null, includeBrackets: boolean, sort: boolean = false): string {
+    if (!snippets) return "";
+
     let entries = Object.entries(snippets);
 
     if (sort) {
