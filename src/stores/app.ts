@@ -14,6 +14,7 @@ export const useAppStore = defineStore("app", () => {
     const outputFormat = ref<"xml" | "json">("json");
     const isCreationMode = ref(false);
     const outputType = ref("snippet");
+    const sortOutput = ref(false);
 
     // Computed
     const templateCount = computed(() => {
@@ -79,6 +80,10 @@ export const useAppStore = defineStore("app", () => {
         templateSetGroup.value = group;
     }
 
+    function toggleSortOutput() {
+        sortOutput.value = !sortOutput.value;
+    }
+
     return {
         // State
         sourceContent,
@@ -91,6 +96,7 @@ export const useAppStore = defineStore("app", () => {
         outputFormat,
         isCreationMode,
         outputType,
+        sortOutput,
 
         // Computed
         templateCount,
@@ -108,5 +114,6 @@ export const useAppStore = defineStore("app", () => {
         setIncludeBrackets,
         setIncludeTemplateSet,
         setTemplateSetGroup,
+        toggleSortOutput,
     };
 });

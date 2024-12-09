@@ -3,9 +3,13 @@ import { VSCodeSnippet } from "@/types";
 interface TemplateSetOptions {
     includeTemplateSet: boolean;
     group: string;
+    sort?: boolean;
 }
 
-export function convertToWebStormTemplate(snippets: Record<string, VSCodeSnippet>, options: TemplateSetOptions = { includeTemplateSet: true, group: "Custom" }): string {
+export function convertToWebStormTemplate(
+    snippets: Record<string, VSCodeSnippet>,
+    options: TemplateSetOptions = { includeTemplateSet: true, group: "Custom", sort: false }
+): string {
     // Helper function to convert VSCode placeholders to WebStorm variables
     function convertPlaceholders(text: string): string {
         return text.replace(/\$\{(\d+)\|([^}]+)\}|\$\{(\d+):([^}]+)\}|\$\{(\d+)\}|\$(\d+)/g, (match, p1, p2, p3, p4, p5, p6) => {
@@ -52,8 +56,14 @@ export function convertToWebStormTemplate(snippets: Record<string, VSCodeSnippet
     }
 
     // Convert each snippet to a WebStorm template
-    const templates = Object.values(snippets)
-        .map((snippet) => {
+    let entries = Object.entries(snippets);
+
+    if (options.sort) {
+        entries = entries.sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+    }
+
+    const templates = entries
+        .map(([_name, snippet]) => {
             const { prefix, body, description, scope } = snippet;
             // First convert placeholders and escape XML, then add line breaks
             const bodyString = body.map((line) => escapeXml(convertPlaceholders(line))).join("&#10;");
@@ -67,6 +77,11 @@ export function convertToWebStormTemplate(snippets: Record<string, VSCodeSnippet
                     ?.map((varMatch) => {
                         const varNumberMatch = varMatch.match(/VAR(\d+)/);
                         const varNameMatch = varMatch.match(/\$([a-zA-Z0-9_]+)\$/);
+
+                        // Skip END marker
+                        if (varMatch === "$END$") {
+                            return "";
+                        }
 
                         if (varNumberMatch) {
                             const varNumber = varNumberMatch[1];
@@ -86,8 +101,9 @@ export function convertToWebStormTemplate(snippets: Record<string, VSCodeSnippet
                                     .map((choice) => `&quot;${choice.trim()}&quot;`)
                                     .join(",");
                                 const defaultValue = choicePlaceholder[1].split(",")[0].trim();
-                                return `<variable name="${varName}" expression="enum(${choices})" defaultValue="${defaultValue}" alwaysStopAt="true" />`;
+                                return `<variable name="${varName}" expression="enum(${choices})" defaultValue="&quot;${defaultValue}&quot;" alwaysStopAt="true" />`;
                             } else {
+                                // For simple tabstops like $1, $2, use empty default value without quotes
                                 return `<variable name="${varName}" expression="" defaultValue="" alwaysStopAt="true" />`;
                             }
                         } else if (varNameMatch) {
@@ -99,10 +115,8 @@ export function convertToWebStormTemplate(snippets: Record<string, VSCodeSnippet
                             }
                             processedVars.add(varName);
 
-                            const defaultPlaceholder = body.join("\n").match(new RegExp(`\\$\\{\\d+:${varName}\\}`));
-                            if (defaultPlaceholder) {
-                                return `<variable name="${varName}" expression="" defaultValue="${varName}" alwaysStopAt="true" />`;
-                            }
+                            // For named placeholders, use the name as the default value
+                            return `<variable name="${varName}" expression="" defaultValue="&quot;${varName}&quot;" alwaysStopAt="true" />`;
                         }
                         return "";
                     })

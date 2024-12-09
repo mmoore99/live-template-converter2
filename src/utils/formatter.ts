@@ -1,4 +1,4 @@
-import { VSCodeSnippet } from "@/types";
+import type { VSCodeSnippet } from "@/types";
 
 function preserveIndentation(lines: string[]): string[] {
     if (lines.length === 0) return lines;
@@ -18,44 +18,22 @@ function preserveIndentation(lines: string[]): string[] {
     });
 }
 
-export function formatSnippetOutput(snippets: Record<string, VSCodeSnippet>, includeBrackets: boolean = false): string {
-    const formattedSnippets = { ...snippets };
+export function formatSnippetOutput(snippets: Record<string, VSCodeSnippet>, includeBrackets: boolean, sort: boolean = false): string {
+    let entries = Object.entries(snippets);
 
-    // Process each snippet's body to preserve formatting
-    for (const key in formattedSnippets) {
-        if (Array.isArray(formattedSnippets[key].body)) {
-            formattedSnippets[key].body = preserveIndentation(formattedSnippets[key].body);
-        }
+    if (sort) {
+        entries = entries.sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
     }
 
-    const output = JSON.stringify(formattedSnippets, null, 2).trim();
-    if (!output || output === "{}") return "";
+    const formattedSnippets = entries
+        .map(([name, snippet]) => {
+            const snippetJson = JSON.stringify(snippet, null, 2)
+                .split("\n")
+                .map((line) => "  " + line) // Indent each line
+                .join("\n");
+            return `"${name}": ${snippetJson}`;
+        })
+        .join(",\n");
 
-    if (includeBrackets) {
-        return output;
-    }
-
-    const lines = output.split("\n");
-    return lines.slice(1, -1).join("\n").trim();
+    return includeBrackets ? `{\n${formattedSnippets}\n}` : formattedSnippets;
 }
-
-// export function getFormattedContent(snippets: Record<string, VSCodeSnippet>, includeBrackets: boolean = false): string {
-//     const formattedSnippets = { ...snippets };
-
-//     // Process each snippet's body to preserve formatting
-//     for (const key in formattedSnippets) {
-//         if (Array.isArray(formattedSnippets[key].body)) {
-//             formattedSnippets[key].body = preserveIndentation(formattedSnippets[key].body);
-//         }
-//     }
-
-//     const output = JSON.stringify(formattedSnippets, null, 2);
-//     if (!output || output === "{}") return "";
-
-//     if (includeBrackets) {
-//         return output;
-//     }
-
-//     const lines = output.split("\n");
-//     return lines.slice(1, -1).join("\n").trim();
-// }

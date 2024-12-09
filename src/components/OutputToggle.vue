@@ -1,6 +1,6 @@
 <template>
     <label class="relative inline-flex items-center gap-2 cursor-pointer">
-        <span class="text-sm font-medium text-gray-700">Enclose in braces</span>
+        <span class="text-sm font-medium text-gray-700">{{ label }}</span>
         <input
             type="checkbox"
             :checked="modelValue"
@@ -17,6 +17,7 @@
 <script setup lang="ts">
 defineProps<{
     modelValue: boolean;
+    label?: string;
 }>();
 
 defineEmits<{

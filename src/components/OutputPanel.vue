@@ -28,8 +28,19 @@
                 </div>
             </div>
             <div class="flex items-center justify-center" :class="[hasValidContent ? 'h-[35px]' : 'h-[44px]']">
-                <TemplateSetControls v-if="language === 'xml' && hasValidContent" v-model="store.includeTemplateSet" v-model:groupValue="store.templateSetGroup" />
-                <OutputToggle v-if="language === 'vscode-snippet' && hasValidContent" v-model="store.includeBrackets" />
+                <div class="flex items-center gap-4">
+                    <TemplateSetControls v-if="language === 'xml' && hasValidContent" v-model="store.includeTemplateSet" v-model:groupValue="store.templateSetGroup" />
+                    <OutputToggle 
+                        v-if="language === 'vscode-snippet' && hasValidContent" 
+                        v-model="store.includeBrackets"
+                        label="Enclose in braces"
+                    />
+                    <OutputToggle 
+                        v-if="hasValidContent"
+                        v-model="store.sortOutput"
+                        :label="`Sort ${language === 'xml' ? 'Templates' : 'Snippets'}`"
+                    />
+                </div>
             </div>
         </div>
         <div class="">
@@ -99,27 +110,30 @@
             store.includeBrackets,
             localOutputType.value,
             store.sourceContent,
-            store.includeTemplateSet, // Add this
-            store.templateSetGroup, // Add this
+            store.includeTemplateSet, 
+            store.templateSetGroup, 
+            store.sortOutput, // Add this
         ],
         () => {
             if (store.isCreationMode) {
                 if (localOutputType.value === "snippet") {
-                    const output = formatSnippetOutput(store.snippets!, store.includeBrackets);
+                    const output = formatSnippetOutput(store.snippets!, store.includeBrackets, store.sortOutput);
                     editorContent.value = output || "";
                 } else {
                     editorContent.value = convertToWebStormTemplate(store.snippets!, {
-                        includeTemplateSet: store.includeTemplateSet, // Update this
-                        group: store.templateSetGroup, // Update this
+                        includeTemplateSet: store.includeTemplateSet,
+                        group: store.templateSetGroup,
+                        sort: store.sortOutput,
                     });
                 }
             } else if (store.outputFormat === "json") {
-                const output = formatSnippetOutput(store.snippets!, store.includeBrackets);
+                const output = formatSnippetOutput(store.snippets!, store.includeBrackets, store.sortOutput);
                 editorContent.value = output || "";
             } else {
                 editorContent.value = convertToWebStormTemplate(store.snippets!, {
-                    includeTemplateSet: store.includeTemplateSet, // Update this
+                    includeTemplateSet: store.includeTemplateSet,
                     group: store.templateSetGroup,
+                    sort: store.sortOutput,
                 });
             }
         },
