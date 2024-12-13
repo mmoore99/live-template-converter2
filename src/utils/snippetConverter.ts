@@ -1,4 +1,4 @@
-import type { SnippetInput, VSCodeSnippet } from '../types';
+import type { SnippetInput, VSCodeSnippet } from "../types";
 
 const escapeSnippetCharacters = (line: string): string => {
     let inBackticks = false;
@@ -6,26 +6,33 @@ const escapeSnippetCharacters = (line: string): string => {
 
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
+        const nextChar = line[i + 1];
 
         if (char === "`") {
             inBackticks = !inBackticks;
+            escapedLine += char;
+            continue;
         }
 
         if (char === "$") {
-            if (inBackticks && line[i + 1] === "{") {
+            if (inBackticks && nextChar === "{") {
                 escapedLine += "\\$";
-            } else if (!inBackticks && line[i + 1] === "{") {
-                escapedLine += char;
-            } else if (/\d/.test(line[i + 1])) {
-                escapedLine += char;
-            } else {
-                escapedLine += "\\$";
+                continue;
             }
-        } else if (char === "\\") {
-            escapedLine += "\\\\";
-        } else {
-            escapedLine += char;
+            if (!inBackticks && (nextChar === "{" || /\d/.test(nextChar))) {
+                escapedLine += char;
+                continue;
+            }
+            escapedLine += "\\$";
+            continue;
         }
+
+        if (char === "\\") {
+            escapedLine += "\\\\";
+            continue;
+        }
+
+        escapedLine += char;
     }
 
     return escapedLine;
@@ -60,6 +67,6 @@ export const generateSnippet = (input: SnippetInput): Record<string, VSCodeSnipp
 export const formatSnippetJson = (snippet: VSCodeSnippet): string => {
     const jsonString = JSON.stringify(snippet, null, 2);
     // Remove the first and last lines (opening and closing braces)
-    const lines = jsonString.split('\n');
-    return lines.slice(1, -1).join('\n').trim();
+    const lines = jsonString.split("\n");
+    return lines.slice(1, -1).join("\n").trim();
 };

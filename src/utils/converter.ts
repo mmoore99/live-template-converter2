@@ -85,10 +85,11 @@ function determineScope(options: string[]): string {
 }
 
 function processBody(template: WebStormTemplate): string[] {
-    let value = template.value;
+    let value = template.value.replace(/\\\$/g, "$"); // Replace \$ with $
+
     let varIndex = 1;
 
-    // Replace variables with placeholders
+    // Replace variables with placeholders first
     for (const variable of template.variables) {
         const placeholder = createPlaceholder(variable, varIndex++);
         value = value.replace(new RegExp(`\\$${variable.name}\\$`, "g"), placeholder);
@@ -104,11 +105,15 @@ function processBody(template: WebStormTemplate): string[] {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
 
-    // Escape dollar signs and backslashes
-    value = value
-        .replace(/\\(?!\\)/g, "\\\\")
-        .replace(/`([^`]*)`/g, (match) => match.replace(/\$\{/g, "\\${"))
-        .replace(/\$(?![\d{])/g, "\\$");
+    // Escape all ${} patterns that aren't snippet placeholders
+    value = value.replace(/\${(\d+)[:|].*?}|\${([^}]+)}/g, (match, placeholderNum) => {
+        // If it's a placeholder (has a number followed by : or |), leave it unchanged
+        if (placeholderNum) {
+            return match;
+        }
+        // Otherwise, escape the ${
+        return `\\${match}`;
+    });
 
     // Split into lines while preserving empty lines and indentation
     return value.split(/(?:&#10;|\n)/);
@@ -130,7 +135,8 @@ export function convertToSnippets(templates: WebStormTemplate[]): Record<string,
 }
 
 export function parseWebStormTemplate(content: string): WebStormTemplate[] {
-    const wrappedContent = content.trim().startsWith("<?xml") || content.trim().startsWith("<templateSet") ? content : `<templateSet>${content}</templateSet>`;
+    const wrappedContent =
+        content.trim().startsWith("<?xml") || content.trim().startsWith("<templateSet") ? content : `<templateSet>${content}</templateSet>`;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(wrappedContent, "text/xml");
