@@ -611,23 +611,55 @@ onMounted(async () => {
             editor.addAction({
                 id: "snippet-menu-separator",
                 label: "────── Snippet Tools ──────",
-                contextMenuGroupId: "9_cutcopypaste", // Place after default items
+                contextMenuGroupId: "9_cutcopypaste",
                 contextMenuOrder: 0,
                 run: () => {}, // No-op
             });
 
             // Add custom items in their own group
             props.contextMenuItems.forEach((item, index) => {
-                editor.addAction({
+                if (!item.id) return;
+
+                // Create the action
+                const action = {
                     id: item.id,
-                    label: `${item.label} ${item.keybinding ? `(${item.keybinding})` : ""}`,
-                    keybindings: item.keybinding ? [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyQ] : [],
-                    contextMenuGroupId: "snippetTools", // Custom group for snippet tools
+                    label: item.label,
+                    contextMenuGroupId: "snippetTools",
                     contextMenuOrder: index + 1,
-                    run: (editor) => {
+
+                    // Important: pass both editor and the item id
+                    run: (editor: any) => {
                         emit("contextMenuAction", item.id, editor);
                     },
-                });
+                };
+
+                // Add keybinding if specified
+                if (item.keybinding) {
+                    const keys = item.keybinding.split("+");
+                    let binding = 0;
+
+                    // Process each key in the combination
+                    keys.forEach((key) => {
+                        const k = key.toLowerCase().trim();
+                        if (k === "alt") {
+                            binding |= monaco.KeyMod.Alt;
+                        } else if (k === "ctrl") {
+                            binding |= monaco.KeyMod.CtrlCmd;
+                        } else if (k === "shift") {
+                            binding |= monaco.KeyMod.Shift;
+                        } else if (/^\d$/.test(k)) {
+                            // For numeric keys 0-9
+                            binding |= monaco.KeyCode.Digit0 + parseInt(k);
+                        }
+                    });
+
+                    if (binding !== 0) {
+                        action.keybindings = [binding];
+                    }
+                }
+
+                // Register the action with Monaco
+                editor.addAction(action);
             });
         }
 

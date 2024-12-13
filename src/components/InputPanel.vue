@@ -311,19 +311,15 @@ function findNextTabstopNumber(content: string): number {
     return highest + 1;
 }
 
-// Update insertSnippetText to use the stored monacoInstance
+// Simplify insertSnippetText to be more direct
 function insertSnippetText(editor: any, text: string) {
     const selection = editor.getSelection();
     const position = editor.getPosition();
+    const range = selection.isEmpty()
+        ? new monacoInstance.value.Range(position.lineNumber, position.column, position.lineNumber, position.column)
+        : selection;
 
-    // Create a range either from selection or current cursor position
-    const range =
-        selection && !selection.isEmpty()
-            ? selection
-            : new monacoInstance.value.Range(position.lineNumber, position.column, position.lineNumber, position.column);
-
-    // Execute the edit
-    editor.executeEdits("snippet", [
+    editor.executeEdits("snippet-insert", [
         {
             range: range,
             text: text,
@@ -357,16 +353,17 @@ const editorContextMenuItems = computed(() => [
 ]);
 
 // Update handleEditorContextMenu to properly handle cursor positioning
-function handleEditorContextMenu(action: string, editor: any) {
+function handleEditorContextMenu(id: string, editor: any) {
+    const nextNum = findNextTabstopNumber(editorContent.value);
+    // Get Monaco instance from the editor if needed
     if (!monacoInstance.value) {
         monacoInstance.value = (window as any).monaco;
     }
 
-    const nextNum = findNextTabstopNumber(editorContent.value);
     const selection = editor.getSelection();
-    const startPosition = selection.isEmpty() ? editor.getPosition() : selection.getStartPosition();
+    const position = editor.getPosition();
 
-    switch (action) {
+    switch (id) {
         case "insertTabstop":
             insertSnippetText(editor, `$${nextNum}`);
             break;
@@ -378,11 +375,9 @@ function handleEditorContextMenu(action: string, editor: any) {
         case "insertPlaceholder": {
             const text = `\${${nextNum}:}`;
             insertSnippetText(editor, text);
-            // Position cursor between : and }
-            const newColumn = startPosition.column + text.indexOf(":") + 1;
             editor.setPosition({
-                lineNumber: startPosition.lineNumber,
-                column: newColumn,
+                lineNumber: position.lineNumber,
+                column: position.column + text.indexOf(":") + 1,
             });
             editor.focus();
             break;
@@ -391,11 +386,9 @@ function handleEditorContextMenu(action: string, editor: any) {
         case "insertChoice": {
             const text = `\${${nextNum}||}`;
             insertSnippetText(editor, text);
-            // Position cursor between the pipes
-            const newColumn = startPosition.column + text.indexOf("|") + 1;
             editor.setPosition({
-                lineNumber: startPosition.lineNumber,
-                column: newColumn,
+                lineNumber: position.lineNumber,
+                column: position.column + text.indexOf("|") + 1,
             });
             editor.focus();
             break;
