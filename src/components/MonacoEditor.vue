@@ -635,23 +635,7 @@ onMounted(async () => {
 
                 // Add keybinding if specified
                 if (item.keybinding) {
-                    const keys = item.keybinding.split("+");
-                    let binding = 0;
-
-                    // Process each key in the combination
-                    keys.forEach((key) => {
-                        const k = key.toLowerCase().trim();
-                        if (k === "alt") {
-                            binding |= monaco.KeyMod.Alt;
-                        } else if (k === "ctrl") {
-                            binding |= monaco.KeyMod.CtrlCmd;
-                        } else if (k === "shift") {
-                            binding |= monaco.KeyMod.Shift;
-                        } else if (/^\d$/.test(k)) {
-                            // For numeric keys 0-9
-                            binding |= monaco.KeyCode.Digit0 + parseInt(k);
-                        }
-                    });
+                    const binding = parseKeybinding(item.keybinding, monaco);
 
                     if (binding !== 0) {
                         action.keybindings = [binding];
@@ -754,6 +738,46 @@ watch(
         }
     }
 );
+
+// Add this helper function after existing functions
+function parseKeybinding(keybindingStr: string, monaco: typeof monacoInstance): number {
+    const keys = keybindingStr.split("+");
+    let binding = 0;
+
+    keys.forEach((key) => {
+        const k = key.trim();
+
+        switch (k.toLowerCase()) {
+            case "ctrl":
+            case "cmd":
+                binding |= monaco.KeyMod.CtrlCmd;
+                break;
+            case "shift":
+                binding |= monaco.KeyMod.Shift;
+                break;
+            case "alt":
+                binding |= monaco.KeyMod.Alt;
+                break;
+            default:
+                let keyCode;
+
+                if (/^[A-Z]$/i.test(k)) {
+                    keyCode = monaco.KeyCode[`Key${k.toUpperCase()}`];
+                } else if (/^\d$/.test(k)) {
+                    keyCode = monaco.KeyCode[`Digit${k}`];
+                } else {
+                    keyCode = monaco.KeyCode[k.toUpperCase()];
+                }
+
+                if (typeof keyCode === "number") {
+                    binding |= keyCode;
+                }
+                break;
+        }
+    });
+
+    return binding;
+}
 
 onBeforeUnmount(() => {
     if (editor) {

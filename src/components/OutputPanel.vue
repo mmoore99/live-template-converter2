@@ -115,7 +115,7 @@ const localOutputType = ref(store.outputType);
 
 const contextMenuItems = computed(() => [
     {
-        id: "copy",
+        id: "copy", // Match the ID used in the handler
         label: "Copy to Clipboard",
         keybinding: "Alt+C",
     },
