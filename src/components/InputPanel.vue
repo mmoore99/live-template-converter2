@@ -1,8 +1,8 @@
 <template>
-    <div class="rounded-lg bg-white p-4 shadow">
+    <div class="p-4 bg-white rounded-lg shadow">
         <div :class="[store.isCreationMode ? '' : 'h-[84px]']">
-            <div class="mb-4 flex items-center justify-between">
-                <div class="flex flex-1 items-center gap-2">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center flex-1 gap-2">
                     <div>
                         <h2 class="text-xl font-semibold">{{ panelTitle }}</h2>
                         <p
@@ -21,7 +21,7 @@
                             loaded
                         </p>
                     </div>
-                    <div class="relative ml-2 flex-1">
+                    <div class="relative flex-1 ml-2">
                         <input
                             ref="fileInput"
                             type="text"
@@ -33,14 +33,14 @@
                         <button
                             v-if="store.inputFilename"
                             @click="clearFilename"
-                            class="absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600">
-                            <Trash2 class="h-4 w-4" />
+                            class="absolute text-blue-500 -translate-y-1/2 right-2 top-1/2 hover:text-blue-600">
+                            <Trash2 class="w-4 h-4" />
                         </button>
                     </div>
                     <button
                         @click="showFileExplorer = true"
                         class="flex w-[120px] items-center justify-center gap-2 rounded bg-blue-600 px-3.5 py-1.5 text-sm text-white hover:bg-blue-700">
-                        <FolderOpen class="h-4 w-4" />
+                        <FolderOpen class="w-4 h-4" />
                         <span>Browse</span>
                     </button>
                     <FileExplorer
@@ -64,7 +64,7 @@
         <div class="editor-wrapper">
             <div class="relative isolate">
                 <button
-                    @click="clearAll"
+                    @click="clearSnippets"
                     class="editor-clear-btn">
                     Clear
                 </button>
@@ -85,8 +85,7 @@ import { ref, computed, watch } from "vue";
 import { useToast } from "vue-toastification";
 import { useAppStore } from "@/stores/app";
 import { detectInputFormat } from "@/utils/detector";
-import { generateSnippet, formatSnippetJson } from "@/utils/snippetConverter";
-import { convertToWebStormTemplate } from "@/utils/vscodeToWebstorm";
+import { generateSnippet } from "@/utils/snippetConverter";
 import { parseWebStormTemplate, convertToSnippets } from "@/utils/converter";
 import MonacoEditor from "./MonacoEditor.vue";
 import CreationModeInputs from "./CreationModeInputs.vue";
@@ -168,6 +167,11 @@ function clearAll() {
         scope: "",
         description: "",
     };
+}
+
+function clearSnippets() {
+    store.clearContent();
+    editorContent.value = "";
 }
 
 function clearFilename() {
