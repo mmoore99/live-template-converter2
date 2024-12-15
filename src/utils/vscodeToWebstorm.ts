@@ -125,12 +125,14 @@ export function convertToWebStormTemplate(
                     .filter(Boolean) // Remove empty strings
                     .join("\n") || "";
 
+            // ...existing code...
             const context = scope
                 ? scope
                       .split(",")
-                      .map((s) => `<option name="${s.trim().toUpperCase()}" value="true" />`)
+                      .map((s) => `<option name="${s.trim()}" value="true" />`)
                       .join("\n")
                 : "";
+            // ...existing code...
 
             return `
   <template name="${prefix}" value="${bodyString}" description="${description}" toReformat="false" toShortenFQNames="true">
